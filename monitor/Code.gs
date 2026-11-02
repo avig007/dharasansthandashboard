@@ -288,9 +288,11 @@ function aiMap_(body) {
     const groq = /^gsk_/.test(key);
     url = groq ? 'https://api.groq.com/openai/v1/chat/completions' : 'https://api.x.ai/v1/chat/completions';
     const model = props.getProperty('AI_MODEL') || pickModel_(key, groq);
-    payload = { model: model, temperature: 0, response_format: { type: 'json_object' },
+    payload = { model: model, temperature: 0, max_tokens: 1200, response_format: { type: 'json_object' },
       messages: [{ role: 'system', content: 'Reply with a single JSON object only.' }, { role: 'user', content: prompt }] };
     read = j => j.choices[0].message.content;
+    if (groq && /gpt-oss/.test(model)) payload.reasoning_effort = 'low';      // keep "thinking" short
+    if (groq && /qwen3/.test(model)) payload.reasoning_effort = 'none';
   } else {                                                   // Google Gemini
     const model = props.getProperty('AI_MODEL') || 'gemini-flash-latest';
     url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + encodeURIComponent(key);
@@ -307,7 +309,8 @@ function aiMap_(body) {
     return { ok: false, error: 'AI service returned ' + code + (code === 429 ? ' (limit reached; try later or map by hand)' : '') + (why ? ': ' + String(why).slice(0, 160) : '') };
   }
   try {
-    const out = JSON.parse(read(JSON.parse(res.getContentText())));
+    const raw = String(read(JSON.parse(res.getContentText()))).replace(/<think>[\s\S]*?<\/think>/g, '');
+    const out = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1));
     if (!Array.isArray(out.mapping)) throw new Error('no mapping');
     return { ok: true, mapping: out.mapping, period: out.period && /^\d{4}-\d{2}$/.test(out.period) ? out.period : null };
   } catch (err) {
@@ -318,15 +321,16 @@ function aiMap_(body) {
 /* No AI_MODEL set: ask the provider which models this key can use and pick a small, fast text model. */
 function pickModel_(key, groq) {
   const props = PropertiesService.getScriptProperties();
-  const saved = props.getProperty('AI_MODEL_AUTO');
+  const saved = props.getProperty('AI_MODEL_PICKED');
   if (saved) return saved;
   const fallback = groq ? 'llama-3.3-70b-versatile' : 'grok-3-mini';
   try {
     const res = UrlFetchApp.fetch(groq ? 'https://api.groq.com/openai/v1/models' : 'https://api.x.ai/v1/models',
       { headers: { Authorization: 'Bearer ' + key }, muteHttpExceptions: true });
-    const ids = JSON.parse(res.getContentText()).data.map(m => m.id).filter(id => !/image|vision|imagine|whisper|tts|guard|embed|audio/i.test(id));
-    const prefs = groq ? [/llama-3\.3-70b/, /llama.*70b/, /llama/, /./] : [/grok.*fast/, /grok.*mini/, /grok/, /./];
-    for (const re of prefs) { const hit = ids.find(id => re.test(id)); if (hit) { props.setProperty('AI_MODEL_AUTO', hit); return hit; } }
+    const ids = JSON.parse(res.getContentText()).data.map(m => m.id).filter(id => !/image|vision|imagine|whisper|tts|guard|embed|audio|compound|prompt/i.test(id));
+    // fast, non-reasoning text models first: they answer in a few hundred tokens and stay within free per-minute limits
+    const prefs = groq ? [/llama-3\.3-70b-versatile/, /llama-3\.\d+-8b-instant/, /llama.*(70b|8b)/, /gpt-oss-20b/, /gpt-oss/, /llama/, /kimi|mistral|gemma/] : [/grok.*fast.*non-reasoning/, /grok.*fast/, /grok.*mini/, /grok/];
+    for (const re of prefs) { const hit = ids.find(id => re.test(id)); if (hit) { props.setProperty('AI_MODEL_PICKED', hit); return hit; } }
   } catch (err) {}
   return fallback;
 }
