@@ -2,481 +2,860 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ATM Monitor · Dhara Sansthan</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Dhara ATM Monitor</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&family=Domine:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Domine:wght@600;700&family=Public+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-:root{--navy:#0B3D66;--blue:#0E5A96;--green:#2E7D32;--green2:#3E9B3A;--red:#B83A3A;--amber:#C98A1B;--ink:#0B3D66;--ink2:#3D4F60;--muted:#5B6B78;--line:#D3E1EC;--tint:#F3F8FC;--bg:#EAF3FA;--card:#FFFFFF}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Public Sans',Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.45}
-header{background:var(--navy);color:#fff;padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-header h1{font-family:Domine,Georgia,serif;font-size:22px;font-weight:700}
-header .sub{font-size:13px;color:#BFD0DC}
-header .sp{flex:1}
-.badge{font-size:12px;font-weight:700;padding:4px 10px;border-radius:12px;background:#12507F;color:#DCE6EC}
-.badge.live{background:#2E7D32;color:#fff}
-.btn{font:inherit;font-weight:700;font-size:14px;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;background:#fff;color:var(--navy)}
-.btn.pri{background:#8FD18A;color:var(--navy)}
-.btn.ghost{background:transparent;color:var(--blue);border:1px solid var(--line)}
-.btn.dark{background:var(--blue);color:#fff}
-.btn:disabled{opacity:.5;cursor:default}
-main{max-width:1280px;margin:0 auto;padding:18px 20px 40px}
-.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:14px}
-.filters label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-select,input[type=text],input[type=password],input[type=search]{font:inherit;font-size:14px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink)}
-.chip{font:inherit;font-size:13px;font-weight:600;padding:5px 10px;border-radius:14px;border:1px solid var(--line);background:#fff;color:var(--blue);cursor:pointer}
-.chip.on{background:var(--blue);color:#fff;border-color:var(--blue)}
-.tabs{display:flex;gap:4px;margin-bottom:14px;flex-wrap:wrap}
-.tab{font:inherit;font-weight:700;font-size:14px;padding:8px 16px;border-radius:8px 8px 0 0;border:0;background:#DCE6EC;color:var(--navy);cursor:pointer}
-.tab.on{background:var(--navy);color:#fff}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px}
-.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
-.kpi .k{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-.kpi .v{font-size:24px;font-weight:700}
+/* Layout: sticky control bar (period + ATM), tab strip, one working panel per tab; tables scroll inside their own boxes */
+:root{
+  --bg:#F4F8FB; --surface:#FFFFFF; --ink:#0B3D66; --muted:#55687A; --line:#D5E2EC; --soft:#EAF2F8;
+  --accent:#0E6BA8; --accent-ink:#FFFFFF;
+  --good:#2E7D32; --good-soft:#E3F2E1; --warn:#B26A00; --warn-soft:#FDF0D9; --bad:#B83A3A; --bad-soft:#F9E1E1;
+  --rev:#0E6BA8; --cost:#7A8AA0; --c-op:#0B3D66; --c-pow:#C77700; --c-rep:#B83A3A; --c-oth:#9FB3C4;
+  --display:'Domine', Georgia, serif; --body:'Public Sans', 'Segoe UI', Arial, sans-serif; --mono:'IBM Plex Mono', ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0D1A25; --surface:#13242F; --ink:#E3EEF6; --muted:#9DB2C3; --line:#26404F; --soft:#1A3140;
+  --accent:#4FA8E0; --accent-ink:#06121B;
+  --good:#7BC47F; --good-soft:#173322; --warn:#E5A84A; --warn-soft:#362813; --bad:#EE8A8A; --bad-soft:#3A1C1F;
+  --rev:#4FA8E0; --cost:#8C9DAE; --c-op:#8EC3EE; --c-pow:#E5A84A; --c-rep:#EE8A8A; --c-oth:#5E7587; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0D1A25; --surface:#13242F; --ink:#E3EEF6; --muted:#9DB2C3; --line:#26404F; --soft:#1A3140;
+  --accent:#4FA8E0; --accent-ink:#06121B;
+  --good:#7BC47F; --good-soft:#173322; --warn:#E5A84A; --warn-soft:#362813; --bad:#EE8A8A; --bad-soft:#3A1C1F;
+  --rev:#4FA8E0; --cost:#8C9DAE; --c-op:#8EC3EE; --c-pow:#E5A84A; --c-rep:#EE8A8A; --c-oth:#5E7587; color-scheme:dark }
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1240px;margin:0 auto;padding-block:20px 48px;display:flex;flex-direction:column;gap:16px}
+header.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+h1{font-family:var(--display);font-size:clamp(26px,4vw,36px);line-height:1.1;margin:4px 0 0;text-wrap:balance}
+.sub{color:var(--muted);margin:6px 0 0;max-width:68ch}
+.hdr-r{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.proto{font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;background:var(--warn-soft);color:var(--warn);white-space:nowrap}
+.proto.live{background:var(--good-soft);color:var(--good)}
+.bar{position:sticky;top:0;z-index:5;background:var(--bg);display:flex;flex-direction:column;gap:10px;padding-block:8px;border-bottom:1px solid var(--line)}
+.controls{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:transparent;color:var(--ink);font:600 13px var(--body);padding:7px 12px;cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+label.inline{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+select,input,textarea{font:14px var(--body);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 9px;min-width:0}
+textarea{width:100%;min-height:60px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:thin}
+.tabs button{border:0;background:transparent;color:var(--muted);font:600 14px var(--body);padding:8px 12px;border-radius:8px;cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:inset 0 -3px 0 var(--accent)}
+.tabs .count{font:500 11px var(--mono);margin-left:6px;padding:1px 6px;border-radius:999px;background:var(--bad-soft);color:var(--bad)}
+.panel{display:flex;flex-direction:column;gap:16px}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.box h2{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+.box h3{font-size:15px;margin:0}
+.box .note,.note{font-size:13px;color:var(--muted);margin:0}
+.box p{margin:0}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.kpi .k{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.kpi .v{font-family:var(--display);font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
 .kpi .d{font-size:12.5px;color:var(--muted)}
-.kpi.good .v{color:var(--green)} .kpi.bad .v{color:var(--red)}
-.grid2{display:grid;grid-template-columns:2fr 1fr;gap:14px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px;min-width:0}
-.card h3{font-size:16px;margin-bottom:2px}
-.card .what{font-size:13px;color:var(--muted);margin-bottom:8px}
-.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--ink2);margin-bottom:4px}
-.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
-svg.ch{width:100%;height:auto;display:block}
-table{width:100%;border-collapse:collapse;font-size:13.5px}
-th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);border-bottom:2px solid var(--line);padding:6px 8px;cursor:pointer;white-space:nowrap}
-td{padding:6px 8px;border-bottom:1px solid #E6EEF4;white-space:nowrap}
-td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
-tr.click{cursor:pointer} tr.click:hover{background:var(--tint)}
-.pos{color:var(--green);font-weight:700}.neg{color:var(--red);font-weight:700}
-.flag{display:inline-block;font-size:11.5px;font-weight:700;padding:1px 7px;border-radius:10px;background:#FBEAEA;color:var(--red);margin:1px 3px 1px 0;white-space:nowrap}
-.ok{display:inline-block;font-size:11.5px;font-weight:700;padding:1px 7px;border-radius:10px;background:#EEF6EE;color:var(--green)}
-.scroll{max-height:560px;overflow:auto}
-.note{font-size:12.5px;color:var(--muted);margin-top:6px}
-.insight{background:#EEF6EE;border-left:6px solid var(--green2);border-radius:8px;padding:8px 12px;font-size:14px;margin-bottom:14px}
-.insight.r{background:#FBEAEA;border-color:var(--red)}
-.modal{position:fixed;inset:0;background:rgba(11,61,102,.45);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;z-index:10;overflow:auto}
-.modal.on{display:flex}
-.box{background:#fff;border-radius:14px;max-width:820px;width:100%;padding:20px 22px}
-.box h2{font-size:20px;margin-bottom:6px}
-.drop{border:2px dashed #9CCBEE;border-radius:12px;padding:26px;text-align:center;color:var(--ink2);background:var(--tint);margin:12px 0;cursor:pointer}
-.drop.hot{background:#DCEAF6}
-.steps{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
-.steps span{font-size:13px;background:var(--tint);border:1px solid var(--line);border-radius:8px;padding:5px 10px}
-.msg{font-size:13.5px;padding:8px 12px;border-radius:8px;margin:8px 0}
-.msg.err{background:#FBEAEA;color:#8E2A2A}.msg.okm{background:#EEF6EE;color:#1F4D22}.msg.warn{background:#FFF6E5;color:#5A4630}
-.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.kpi.bad .v{color:var(--bad)} .kpi.good .v{color:var(--good)}
+.grid2{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:16px}
+.grid2e{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:860px){.grid2,.grid2e{grid-template-columns:minmax(0,1fr)}}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:13.5px}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+td.l,th.l{text-align:left;white-space:normal}
+th{font-size:12px;color:var(--muted);font-weight:700;cursor:pointer;user-select:none}
+th[data-k]:hover{color:var(--ink)}
+tr.loss td:first-child{box-shadow:inset 3px 0 0 var(--bad)}
+tr.sel td{background:var(--soft)}
+.neg{color:var(--bad);font-weight:600} .pos{color:var(--good);font-weight:600}
+.chip{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;margin:1px 3px 1px 0;white-space:nowrap}
+.chip.bad{background:var(--bad-soft);color:var(--bad)} .chip.warn{background:var(--warn-soft);color:var(--warn)} .chip.good{background:var(--good-soft);color:var(--good)} .chip.info{background:var(--soft);color:var(--ink)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+svg text{font-family:var(--body);fill:var(--muted)}
+svg [data-act]{cursor:pointer}
+svg [data-act]:hover{opacity:.8}
+form.f{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px 14px;align-items:end}
+form.f label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;font-weight:600;color:var(--muted)}
+form.f .wide{grid-column:1/-1}
+fieldset.yl{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;min-width:0}
+fieldset.yl legend{font-size:12.5px;font-weight:600;color:var(--muted);padding:0;margin-bottom:4px}
+.yn{display:flex;gap:14px}
+form.f .yn label{flex-direction:row;align-items:center;gap:5px;font-weight:500;color:var(--ink);font-size:14px}
+.btn{font:700 14px var(--body);border:0;border-radius:9px;padding:9px 16px;background:var(--accent);color:var(--accent-ink);cursor:pointer;text-decoration:none;display:inline-block}
+.btn.ghost{background:var(--surface);color:var(--accent);border:1px solid var(--line)}
+.btn:disabled{opacity:.5;cursor:default}
+.status{font-size:13px;min-height:1.2em;margin:0}
+.status.ok{color:var(--good)} .status.err{color:var(--bad)}
+.empty{padding:22px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);text-align:center}
+.loading{padding:40px;text-align:center;color:var(--muted)}
+.foot{font-size:12.5px;color:var(--muted)}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.row.start{justify-content:flex-start}
+a{color:var(--accent)}
+/* cost explorer */
+.hb{display:flex;flex-direction:column;gap:4px;max-height:520px;overflow-y:auto}
+.hb button{display:grid;grid-template-columns:150px minmax(0,1fr) 78px;gap:8px;align-items:center;border:0;background:transparent;color:var(--ink);font:13px var(--body);padding:3px 4px;border-radius:6px;cursor:pointer;text-align:left}
+.hb button:hover{background:var(--soft)}
+.hb button.sel{background:var(--soft);font-weight:700}
+.hb .t{display:block;height:14px;border-radius:3px;background:var(--soft)}
+.hb .t i{display:block;height:100%;border-radius:3px}
+.hb .v{text-align:right;font-variant-numeric:tabular-nums}
+.heat td{padding:0;border:1px solid var(--surface);text-align:center;font-size:11.5px}
+.heat td button{width:100%;min-width:56px;border:0;padding:6px 4px;font:600 11.5px var(--body);cursor:pointer;color:var(--ink)}
+.heat td.n{padding:4px 8px;text-align:left;white-space:nowrap;font-size:12.5px;border:0;border-bottom:1px solid var(--line)}
+.heat th{font-size:11.5px;text-align:center}
+.heat td button.sel{outline:2px solid var(--ink);outline-offset:-2px}
+/* upload */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;counter-reset:s;margin:0;padding:0;list-style:none}
+.steps li{background:var(--soft);border-radius:10px;padding:12px;font-size:13.5px;display:flex;flex-direction:column;gap:4px}
+.steps li b.n{display:inline-flex;width:26px;height:26px;border-radius:13px;background:var(--accent);color:var(--accent-ink);align-items:center;justify-content:center;font-size:13px}
+.drop{border:2px dashed var(--accent);border-radius:12px;padding:26px;text-align:center;color:var(--accent);font-weight:700;cursor:pointer;background:var(--soft)}
+.drop.hot{background:var(--good-soft);border-color:var(--good);color:var(--good)}
+.msg{padding:9px 12px;border-radius:9px;font-size:13.5px}
+.msg.ok{background:var(--good-soft);color:var(--good)} .msg.warn{background:var(--warn-soft);color:var(--warn)} .msg.err{background:var(--bad-soft);color:var(--bad)}
+details summary{cursor:pointer;font-weight:700;color:var(--accent)}
+.howto h3{margin-top:4px}
+.howto ol,.howto ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
 .hide{display:none}
-@media (max-width:860px){.grid2{grid-template-columns:1fr}header h1{font-size:18px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
-<header>
-  <div><h1>ATM Monitor · Dhara Sansthan</h1><p class="sub">Community RO Water ATMs: monthly performance, warning flags and history</p></div>
-  <div class="sp"></div>
-  <span id="src" class="badge">Sample data</span>
-  <button class="btn pri" onclick="openUpload()">⬆ Upload data</button>
-  <button class="btn" onclick="openSettings()">⚙ Settings</button>
-</header>
-<main>
-  <div class="filters">
-    <label>From</label><select id="from"></select>
-    <label>To</label><select id="to"></select>
-    <label>ATM</label><select id="atm"></select>
-    <span style="flex:1"></span>
-    <button class="chip" data-q="3">Last 3 months</button>
-    <button class="chip" data-q="12">Last 12 months</button>
-    <button class="chip" data-q="fy">Latest financial year</button>
-    <button class="chip" data-q="all">All data</button>
-  </div>
-  <div class="tabs" id="tabs">
-    <button class="tab on" data-t="ov">Overview</button>
-    <button class="tab" data-t="atms">ATMs</button>
-    <button class="tab" data-t="flags">Warning flags</button>
-    <button class="tab" data-t="data">Data</button>
-  </div>
-  <div id="view"></div>
-</main>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Dhara Sansthan · Community RO Water ATMs</div>
+      <h1>ATM Monitor</h1>
+      <p class="sub">Monthly revenue, running costs, cards, repairs and health checks for every ATM. New months are added by uploading the monthly Excel statement; every month is kept in the master Google Sheet.</p>
+    </div>
+    <div class="hdr-r">
+      <span class="proto" id="srcBadge">Prototype · seeded with April–September 2026 data</span>
+      <a class="btn ghost" id="masterLink" target="_blank" rel="noopener">Master data ↗</a>
+      <button class="btn" type="button" data-go="add">⬆ Add data</button>
+    </div>
+  </header>
 
-<div class="modal" id="up"><div class="box">
-  <div class="row"><h2 style="flex:1">Upload data</h2><button class="btn ghost" onclick="closeM('up')">Close</button></div>
-  <p style="font-size:14px;color:var(--ink2)">Add a month, a week or a whole year at once. No fixed format is needed: the dashboard reads the file, matches the columns and shows a preview before anything is saved.</p>
-  <div class="card" style="margin:10px 0;padding:10px 14px;background:var(--tint)"><p style="font-weight:700;margin-bottom:4px">Files it accepts</p>
-   <p style="font-size:13.5px">✔ <b>Dhara Sansthan’s monthly “Statement of Receipts &amp; Payments”</b>: upload it as it is. Each month sheet is read, and the month is taken from the sheet title.</p>
-   <p style="font-size:13.5px">✔ <b>Any sheet with one row per ATM</b>: column names are matched automatically (e.g. “Name of the Plant”, “No. of Cans”, “Revenu Total”, “Operator Salary”). You can correct the matching, or ask AI to do it.</p>
-   <p style="font-size:13.5px">✔ <b>The simple template</b> (below), if you prefer: ATM · Period · Cans · Revenue · Operator pay · Electricity · Repairs and consumables · Other costs.</p>
-   <p class="note"><b>Must have:</b> ATM name, cans sold, revenue, and the month (a column, the sheet title or the sheet name). Costs are optional. Weekly rows are added up into months. Re-uploading the same ATM and period replaces the old figures.</p></div>
-  <div class="row"><button class="btn ghost" onclick="downloadTemplate()">⬇ Simple template (optional)</button></div>
-  <div class="drop" id="drop">Drop an Excel (.xlsx, .xls) or CSV file here, or click to choose<input id="file" type="file" accept=".xlsx,.xls,.csv" class="hide"></div>
-  <div id="upmsg"></div>
-  <div id="preview"></div>
-  <div class="row" id="upbtns" style="justify-content:flex-end"></div>
-</div></div>
+  <div class="bar">
+    <div class="controls">
+      <div class="seg" id="period" role="group" aria-label="Time period">
+        <button type="button" data-p="1">Last month</button>
+        <button type="button" data-p="3">Last 3 months</button>
+        <button type="button" data-p="6" aria-pressed="true">Last 6 months</button>
+        <button type="button" data-p="12">Last 12 months</button>
+        <button type="button" data-p="all">All</button>
+        <button type="button" data-p="custom">Custom</button>
+      </div>
+      <span id="customBox" hidden>
+        <label class="inline">From <select id="fromM"></select></label>
+        <label class="inline">to <select id="toM"></select></label>
+      </span>
+      <label class="inline">ATM <select id="atmSel"><option value="">All ATMs</option></select></label>
+      <span class="foot" id="periodLabel"></span>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button role="tab" data-t="overview" aria-selected="true">Overview</button>
+      <button role="tab" data-t="money">Revenue and costs</button>
+      <button role="tab" data-t="costs">Cost explorer</button>
+      <button role="tab" data-t="cards">Cards</button>
+      <button role="tab" data-t="repairs">Repair log</button>
+      <button role="tab" data-t="health">Health checks</button>
+      <button role="tab" data-t="flags">Flags<span class="count" id="flagCount" hidden></span></button>
+      <button role="tab" data-t="add">Add data</button>
+      <button role="tab" data-t="master">Master data</button>
+      <button role="tab" data-t="help">How to use</button>
+    </nav>
+  </div>
 
-<div class="modal" id="set"><div class="box">
-  <div class="row"><h2 style="flex:1">Settings</h2><button class="btn ghost" onclick="closeM('set')">Close</button></div>
-  <p style="font-size:14px;color:var(--ink2);margin-bottom:10px">Connect the dashboard to the master Google Sheet. Paste the web-app address from Apps Script (see the set-up guide). Without it, the dashboard shows the bundled sample data, Apr–Sep 2026.</p>
-  <div class="row" style="margin-bottom:8px"><label style="width:150px;font-weight:700">Apps Script URL</label><input id="apiUrl" type="text" style="flex:1" placeholder="https://script.google.com/macros/s/…/exec"></div>
-  <div class="row" style="margin-bottom:8px"><label style="width:150px;font-weight:700">Upload passcode</label><input id="pass" type="password" style="flex:1" placeholder="Set in the Apps Script code"></div>
-  <div class="row" style="justify-content:flex-end"><button class="btn ghost" onclick="clearApi()">Disconnect</button><button class="btn dark" onclick="saveApi()">Save and reload data</button></div>
-  <div id="setmsg"></div>
-</div></div>
+  <main id="main"><div class="loading">Loading ATM data…</div></main>
+
+  <p class="foot">Source of seeded figures: Dhara Sansthan RO plant spreadsheet, April–September 2026. Running costs = operator pay + electricity + repairs and consumables + other (water charges, housekeeping, misc). Litres = cans × 20. Water quality limits: IS 10500 (TDS up to 500 mg/L; pH 6.5–8.5). Master data: <a id="masterLink2" target="_blank" rel="noopener">Google Sheet</a>.</p>
+</div>
 
 <script>
+(function(){
+"use strict";
 /* ---------- configuration ---------- */
-const DEFAULT_API = '';              // optional: paste the Apps Script /exec URL here so every visitor sees live data
-const SEED = [["Baad Shyopur", "2026-04", 11725, 48580, 14000, 9215, 3500, 500], ["Shri Ram ki Nangal", "2026-04", 12825, 53880, 15500, 10455, 3430, 1300], ["Shrikishan Pura", "2026-04", 6375, 26400, 10500, 5341, 2950, 2000], ["Mathurawala", "2026-04", 8562, 35210, 12000, 7895, 7350, 500], ["Vidhani", "2026-04", 4900, 20080, 9900, 6713, 3420, 500], ["Vatika", "2026-04", 11525, 47360, 15700, 11721, 7010, 2600], ["Mohanpura", "2026-04", 8950, 36040, 12000, 9920, 5250, 500], ["Muhana", "2026-04", 3525, 14820, 12000, 2816, 3210, 500], ["Pawaliya", "2026-04", 5025, 20280, 8300, 4968, 3670, 500], ["Siroli", "2026-04", 11900, 49100, 13600, 10850, 3090, 2300], ["Sambhariya", "2026-04", 1312, 5250, 5500, 2675, 2850, 0], ["Bhondo ki Dhani", "2026-04", 8775, 35460, 9000, 5925, 3340, 500], ["Saypura", "2026-04", 2625, 10560, 11000, 5442, 2850, 500], ["Dadiya", "2026-04", 3425, 14540, 7500, 4256, 5050, 500], ["Sukhdev Pura", "2026-04", 7800, 31200, 13500, 12127, 2850, 500], ["Ramsinghpura", "2026-04", 6050, 25400, 6500, 9119, 3550, 7519], ["Bagru Khurd", "2026-04", 8072, 32290, 9000, 7606, 2850, 500], ["Aandhi", "2026-04", 4600, 18400, 8000, 6864, 3250, 500], ["Sahbhagita", "2026-04", 11275, 46780, 11000, 11289, 3895, 2500], ["Prahladpura", "2026-04", 2350, 9640, 7800, 4532, 2850, 500], ["Madrampura", "2026-04", 2400, 10200, 8000, 2689, 2850, 500], ["Naya Vatika", "2026-04", 11550, 47820, 9000, 7793, 3500, 1300], ["Laxmipura", "2026-04", 4000, 16840, 6300, 8423, 3050, 500], ["Acharawala", "2026-04", 2300, 9200, 7000, 3099, 3350, 500], ["Kapoorawala", "2026-04", 4075, 16780, 8500, 2180, 4550, 2000], ["Kallawala (Khedi Gokulpura)", "2026-04", 7477, 30989, 7500, 6620, 3970, 1300], ["Jairajpura", "2026-04", 5548, 23390, 7500, 3962, 3250, 500], ["Beelwa", "2026-04", 4150, 16960, 7500, 4851, 2850, 500], ["Seeta Ram Pura", "2026-04", 3875, 16700, 6000, 2747, 0, 0], ["Shivdas Pura", "2026-04", 2112, 9290, 11000, 0, 0, 0], ["Baad Shyopur", "2026-05", 10025, 40520, 14000, 13365, 2950, 1300], ["Shri Ram ki Nangal", "2026-05", 12550, 52960, 15500, 11789, 4990, 1300], ["Shrikishan Pura", "2026-05", 7212, 30290, 10500, 6006, 4100, 2000], ["Mathurawala", "2026-05", 7025, 28580, 12000, 7572, 3650, 2100], ["Vidhani", "2026-05", 5625, 23040, 9900, 3535, 2950, 500], ["Vatika", "2026-05", 15975, 65220, 15700, 8983, 2950, 3400], ["Mohanpura", "2026-05", 10325, 42680, 12000, 12195, 3750, 500], ["Muhana", "2026-05", 10325, 42680, 12000, 12195, 3750, 500], ["Pawaliya", "2026-05", 7100, 28800, 8300, 6348, 3960, 500], ["Siroli", "2026-05", 15150, 61200, 13600, 12378, 5090, 2750], ["Sambhariya", "2026-05", 1390, 5560, 5500, 2175, 2950, 0], ["Bhondo ki Dhani", "2026-05", 11025, 45000, 9000, 6882, 2950, 500], ["Saypura", "2026-05", 3062, 13110, 11000, 5655, 2950, 500], ["Dadiya", "2026-05", 4175, 17180, 7500, 4555, 2950, 500], ["Sukhdev Pura", "2026-05", 8600, 34400, 13500, 10971, 2950, 500], ["Ramsinghpura", "2026-05", 8675, 36500, 6500, 8031, 3850, 500], ["Bagru Khurd", "2026-05", 10365, 41460, 9000, 5340, 18765, 500], ["Aandhi", "2026-05", 5600, 30800, 8000, 8153, 3633, 500], ["Sahbhagita", "2026-05", 12600, 51660, 11000, 13869, 2950, 2500], ["Prahladpura", "2026-05", 2675, 10760, 7800, 4610, 3100, 500], ["Madrampura", "2026-05", 2500, 11200, 8000, 3338, 2950, 2000], ["Naya Vatika", "2026-05", 12400, 51580, 9000, 15838, 3650, 2000], ["Laxmipura", "2026-05", 4950, 20700, 6300, 5490, 2950, 500], ["Acharawala", "2026-05", 3275, 10100, 7000, 6392, 3550, 500], ["Kapoorawala", "2026-05", 5125, 20860, 8500, 2840, 3810, 2000], ["Kallawala (Khedi Gokulpura)", "2026-05", 8654, 35996, 7500, 7240, 5100, 1300], ["Jairajpura", "2026-05", 7315, 30160, 7500, 3953, 3700, 500], ["Beelwa", "2026-05", 5475, 22680, 7500, 3973, 3240, 500], ["Seeta Ram Pura", "2026-05", 3130, 13540, 6000, 3860, 0, 0], ["Shivdas Pura", "2026-05", 1825, 8999, 5500, 0, 0, 0], ["Baad Shyopur", "2026-06", 8550, 34500, 14000, 12125, 3025, 1300], ["Shri Ram ki Nangal", "2026-06", 13175, 54740, 15500, 14401, 3965, 500], ["Shrikishan Pura", "2026-06", 6900, 28740, 10500, 7111, 3025, 500], ["Mathurawala", "2026-06", 9025, 36640, 12000, 12416, 4265, 500], ["Vidhani", "2026-06", 4375, 17800, 9900, 3061, 3025, 500], ["Vatika", "2026-06", 12275, 50300, 15700, 11021, 5675, 4350], ["Mohanpura", "2026-06", 8850, 36300, 12000, 18261, 3625, 500], ["Muhana", "2026-06", 1450, 6100, 12000, 2135, 3025, 500], ["Pawaliya", "2026-06", 5775, 23400, 8300, 8588, 4810, 500], ["Siroli", "2026-06", 12060, 48840, 13600, 13725, 3025, 2750], ["Bhondo ki Dhani", "2026-06", 10750, 44440, 9000, 7373, 3825, 500], ["Saypura", "2026-06", 3975, 15900, 11000, 6600, 3025, 1700], ["Dadiya", "2026-06", 4060, 16720, 7500, 4625, 3025, 500], ["Sukhdev Pura", "2026-06", 7200, 28800, 13500, 12737, 3025, 500], ["Ramsinghpura", "2026-06", 6675, 27600, 6500, 10579, 3025, 500], ["Bagru Khurd", "2026-06", 7700, 31940, 9000, 5785, 5225, 500], ["Aandhi", "2026-06", 5525, 22700, 8000, 6763, 4565, 500], ["Sahbhagita", "2026-06", 10838, 44492, 11000, 12142, 3025, 2500], ["Prahladpura", "2026-06", 1450, 5980, 7800, 5317, 3025, 500], ["Madrampura", "2026-06", 2800, 13000, 8000, 4969, 3025, 500], ["Naya Vatika", "2026-06", 11450, 47300, 9000, 20079, 3725, 500], ["Laxmipura", "2026-06", 4550, 18620, 6300, 7606, 3025, 500], ["Acharawala", "2026-06", 2850, 11400, 7000, 6252, 3525, 500], ["Kapoorawala", "2026-06", 4975, 20200, 8500, 3050, 3625, 2000], ["Kallawala (Khedi Gokulpura)", "2026-06", 7785, 32040, 7500, 8590, 3225, 1300], ["Jairajpura", "2026-06", 5740, 23560, 7500, 5183, 3025, 500], ["Beelwa", "2026-06", 4075, 17680, 7500, 5812, 3125, 500], ["Seeta Ram Pura", "2026-06", 3875, 16700, 6000, 3825, 0, 0], ["Shivdas Pura", "2026-06", 1825, 7720, 5500, 2523, 893, 0], ["Barkheda", "2026-06", 2690, 16400, 5500, 0, 0, 0], ["Baad Shyopur", "2026-07", 8150, 33380, 14000, 11641, 8855, 1300], ["Shri Ram ki Nangal", "2026-07", 14675, 62060, 15500, 13924, 7935, 500], ["Shrikishan Pura", "2026-07", 6225, 26040, 10500, 6821, 7335, 500], ["Mathurawala", "2026-07", 11000, 44300, 12000, 11050, 7850, 500], ["Vidhani", "2026-07", 4825, 19960, 9900, 3004, 7205, 500], ["Vatika", "2026-07", 11125, 45340, 15700, 12135, 7775, 3350], ["Mohanpura", "2026-07", 9000, 36900, 12000, 18177, 8205, 500], ["Muhana", "2026-07", 1375, 5680, 12000, 1921, 7205, 500], ["Pawaliya", "2026-07", 5850, 23460, 8300, 7408, 7905, 500], ["Siroli", "2026-07", 13525, 54340, 13600, 13731, 7445, 2300], ["Bhondo ki Dhani", "2026-07", 9500, 38960, 9000, 19373, 7205, 500], ["Saypura", "2026-07", 3775, 15100, 11000, 6161, 7205, 1700], ["Dadiya", "2026-07", 3700, 15280, 7500, 6161, 7205, 500], ["Sukhdev Pura", "2026-07", 4928, 19710, 13500, 10811, 9155, 500], ["Ramsinghpura", "2026-07", 6050, 24920, 6500, 8760, 7205, 1300], ["Bagru Khurd", "2026-07", 9025, 36640, 9000, 22871, 7205, 500], ["Aandhi", "2026-07", 4625, 18740, 8000, 6231, 7205, 500], ["Sahbhagita", "2026-07", 13050, 54240, 11000, 15349, 7205, 2500], ["Prahladpura", "2026-07", 1125, 4560, 7800, 3223, 7205, 500], ["Madrampura", "2026-07", 2975, 12500, 8000, 4871, 7205, 500], ["Naya Vatika", "2026-07", 11150, 46760, 9000, 12931, 7805, 500], ["Laxmipura", "2026-07", 4400, 17900, 6300, 8852, 7205, 500], ["Acharawala", "2026-07", 4075, 16300, 7000, 11369, 7925, 500], ["Kapoorawala", "2026-07", 4700, 19220, 8500, 1593, 7580, 2000], ["Kallawala (Khedi Gokulpura)", "2026-07", 7995, 33000, 7500, 5683, 7895, 1300], ["Jairajpura", "2026-07", 6238, 25434, 7500, 4713, 7655, 500], ["Beelwa", "2026-07", 4225, 17380, 7500, 5567, 7505, 500], ["Seeta Ram Pura", "2026-07", 3900, 16860, 6000, 5293, 450, 0], ["Shivdas Pura", "2026-07", 2125, 9220, 5500, 2673, 0, 0], ["Padampura", "2026-07", 3325, 13300, 5500, 0, 490, 0], ["Barkheda", "2026-07", 2138, 10970, 5500, 0, 0, 0], ["Baad Shyopur", "2026-08", 8025, 32700, 14000, 11965, 4863, 1300], ["Shri Ram ki Nangal", "2026-08", 12050, 51200, 15500, 14657, 4393, 500], ["Shrikishan Pura", "2026-08", 6525, 27840, 10500, 6147, 3613, 500], ["Mathurawala", "2026-08", 10875, 43500, 12000, 9540, 4537, 500], ["Vidhani", "2026-08", 4825, 19960, 9900, 3004, 4183, 500], ["Vatika", "2026-08", 9800, 40280, 15700, 12183, 3613, 3350], ["Mohanpura", "2026-08", 7925, 32780, 12000, 13449, 5213, 500], ["Muhana", "2026-08", 1212, 4850, 12000, 1623, 3613, 500], ["Pawaliya", "2026-08", 4575, 18340, 8300, 7244, 4463, 500], ["Siroli", "2026-08", 11025, 44280, 13600, 13431, 6113, 2300], ["Bhondo ki Dhani", "2026-08", 7750, 31600, 9000, 6541, 3613, 500], ["Saypura", "2026-08", 3805, 15220, 11000, 7107, 4013, 1700], ["Dadiya", "2026-08", 2580, 10800, 7500, 3321, 3613, 500], ["Sukhdev Pura", "2026-08", 5008, 20030, 13500, 11247, 3613, 500], ["Ramsinghpura", "2026-08", 5775, 24180, 6500, 7640, 4413, 1300], ["Bagru Khurd", "2026-08", 9400, 39040, 9000, 11041, 3613, 500], ["Aandhi", "2026-08", 5700, 22800, 8000, 8455, 18213, 500], ["Sahbhagita", "2026-08", 10625, 43940, 11000, 15233, 9013, 2500], ["Prahladpura", "2026-08", 750, 3060, 7800, 3296, 3913, 500], ["Madrampura", "2026-08", 2575, 10900, 8000, 4403, 3613, 500], ["Naya Vatika", "2026-08", 9725, 41060, 9000, 21438, 4513, 500], ["Laxmipura", "2026-08", 4175, 16820, 6300, 6855, 3793, 500], ["Acharawala", "2026-08", 2750, 10700, 11000, 11369, 4333, 500], ["Kapoorawala", "2026-08", 4175, 17180, 8500, 2943, 4213, 2000], ["Kallawala (Khedi Gokulpura)", "2026-08", 6468, 26950, 7500, 9602, 4613, 1300], ["Jairajpura", "2026-08", 5075, 21320, 7500, 4885, 3613, 500], ["Beelwa", "2026-08", 2775, 11340, 7500, 4789, 4363, 500], ["Seeta Ram Pura", "2026-08", 2672, 11530, 6000, 3617, 0, 0], ["Shivdas Pura", "2026-08", 1920, 7680, 5500, 421, 0, 0], ["Padampura", "2026-08", 2925, 12120, 5500, 3300, 0, 0], ["Barkheda", "2026-08", 1965, 8760, 5500, 1205, 0, 0], ["Baad Shyopur", "2026-09", 6850, 28900, 14000, 11092, 7255, 500], ["Shri Ram ki Nangal", "2026-09", 12500, 51920, 15500, 14657, 6255, 500], ["Shrikishan Pura", "2026-09", 5775, 24600, 10500, 5961, 6255, 500], ["Mathurawala", "2026-09", 8550, 35400, 12000, 10917, 6695, 500], ["Vidhani", "2026-09", 4725, 19200, 9900, 2818, 6255, 500], ["Vatika", "2026-09", 11075, 45200, 15700, 12231, 7055, 4000], ["Mohanpura", "2026-09", 7400, 30320, 12000, 12756, 6475, 500], ["Muhana", "2026-09", 1130, 4520, 12000, 1224, 6255, 500], ["Pawaliya", "2026-09", 6050, 24440, 8300, 5968, 7045, 500], ["Siroli", "2026-09", 11050, 44440, 13600, 12416, 6495, 2300], ["Bhondo ki Dhani", "2026-09", 7500, 30420, 9000, 12591, 6405, 500], ["Saypura", "2026-09", 3250, 13000, 11000, 6890, 6255, 1700], ["Dadiya", "2026-09", 3025, 12580, 7500, 3266, 6255, 500], ["Sukhdev Pura", "2026-09", 5675, 22700, 13500, 11013, 7255, 500], ["Ramsinghpura", "2026-09", 5075, 21260, 6500, 6500, 6955, 1300], ["Bagru Khurd", "2026-09", 6225, 25620, 9000, 8160, 7905, 500], ["Aandhi", "2026-09", 4705, 18820, 8000, 11553, 6255, 500], ["Sahbhagita", "2026-09", 10700, 43700, 11000, 15069, 6255, 2500], ["Prahladpura", "2026-09", 715, 2920, 7800, 2752, 6255, 500], ["Madrampura", "2026-09", 2825, 12020, 8000, 5642, 6255, 500], ["Naya Vatika", "2026-09", 8275, 34600, 9000, 23582, 6255, 500], ["Laxmipura", "2026-09", 3925, 16000, 6300, 6148, 6255, 500], ["Acharawala", "2026-09", 2500, 10000, 11000, 5442, 6255, 500], ["Kapoorawala", "2026-09", 4200, 17160, 8500, 3460, 6255, 2000], ["Kallawala (Khedi Gokulpura)", "2026-09", 6822, 27950, 7500, 7670, 6455, 1300], ["Jairajpura", "2026-09", 6000, 25500, 7500, 5063, 6255, 500], ["Beelwa", "2026-09", 4000, 16360, 7500, 4803, 6255, 500], ["Seeta Ram Pura", "2026-09", 4705, 19780, 6000, 3913, 0, 0], ["Shivdas Pura", "2026-09", 1865, 7460, 5500, 1251, 0, 0], ["Padampura", "2026-09", 2275, 10000, 5500, 2530, 200, 0], ["Barkheda", "2026-09", 3135, 14040, 5500, 1208, 300, 0]];          // bundled data: [ATM, Period, Cans, Revenue, Operator pay, Electricity, Repairs and consumables, Other costs]
-const HEAD = ['ATM','Period','Cans','Revenue','Operator pay','Electricity','Repairs and consumables','Other costs'];
-const ALIAS = {atm:['atm','atm name','plant','site','village','location'],period:['period','month','week','date','week start','month (yyyy-mm)'],
-  cans:['cans','cans sold','no of cans','number of cans','taps'],revenue:['revenue','sales','income','collection','revenue (₹)'],
-  op:['operator pay','operator salary','operator','salary','operator pay (₹)'],elec:['electricity','power','electricity bill','electricity (₹)'],
-  rep:['repairs and consumables','repairs','repairs & consumables','maintenance','repairs and consumables (₹)'],other:['other costs','other','water charges','housekeeping','other costs (₹)']};
-const C={navy:'#0B3D66',blue:'#0E5A96',blue2:'#2E6DB4',green:'#3E9B3A',greenD:'#2E7D32',red:'#B83A3A',redL:'#E08A8A',amber:'#C98A1B',muted:'#5B6B78',ink2:'#3D4F60',grid:'#E6EEF4',op:'#0E5A96',el:'#C98A1B',rp:'#B83A3A',ot:'#9CB4C8'};
+const MASTER_URL = 'https://docs.google.com/spreadsheets/d/1XuvAuErkIzy9IiJ-jgsaw9kFPF4QvcNCWMcWEC7ImI4/edit';
+const DEFAULT_API = '';   // paste the Apps Script /exec URL here (see SETUP.md) so every visitor sees the live Google Sheet
+const SEED = {"atms":[["Aandhi","Loss-making"],["Acharawala","Loss-making"],["Baad Shyopur","Profit-making"],["Bagru Khurd","Profit-making"],["Barkheda","New site"],["Beelwa","Loss-making"],["Bhondo ki Dhani","Profit-making"],["Dadiya","Loss-making"],["Jairajpura","Profit-making"],["Kallawala (Khedi Gokulpura)","Profit-making"],["Kapoorawala","Profit-making"],["Laxmipura","Loss-making"],["Madrampura","Loss-making"],["Mathurawala","Profit-making"],["Mohanpura","Profit-making"],["Muhana","Loss-making"],["Naya Vatika","Profit-making"],["Padampura","New site"],["Pawaliya","Profit-making"],["Prahladpura","Loss-making"],["Ramsinghpura","Profit-making"],["Sahbhagita","Profit-making"],["Sambhariya","Closed"],["Saypura","Loss-making"],["Seeta Ram Pura","Profit-making"],["Shivdas Pura","Profit-making"],["Shri Ram ki Nangal","Profit-making"],["Shrikishan Pura","Profit-making"],["Siroli","Profit-making"],["Sukhdev Pura","Loss-making"],["Vatika","Profit-making"],["Vidhani","Profit-making"]],"monthly":[["Aandhi","2026-04",4600,18400,8000,6864,3250,500,0,5628],["Acharawala","2026-04",2300,9200,7000,3099,3350,500,0,321],["Baad Shyopur","2026-04",11725,48580,14000,9215,3500,500,28,1947],["Bagru Khurd","2026-04",8072.5,32290,9000,7606,2850,500,0,1209],["Beelwa","2026-04",4150,16960,7500,4851,2850,500,6,173],["Bhondo ki Dhani","2026-04",8775,35460,9000,5925,3340,500,6,1039],["Dadiya","2026-04",3425,14540,7500,4256,5050,500,14,448],["Jairajpura","2026-04",5547.5,23390,7500,3962,3250,500,20,347],["Kallawala (Khedi Gokulpura)","2026-04",7477.2,30989,7500,6620,3970,1300,18,778],["Kapoorawala","2026-04",4075,16780,8500,2180,4550,2000,8,753],["Laxmipura","2026-04",4000,16840,6300,8423,3050,500,14,28],["Madrampura","2026-04",2400,10200,8000,2689,2850,500,10,390],["Mathurawala","2026-04",8562.5,35210,12000,7895,7350,500,16,1563],["Mohanpura","2026-04",8950,36040,12000,9920,5250,500,4,1132],["Muhana","2026-04",3525,14820,12000,2816,3210,500,12,1292],["Naya Vatika","2026-04",11550,47820,9000,7793,3500,1300,27,2003],["Pawaliya","2026-04",5025,20280,8300,4968,3670,500,3,573],["Prahladpura","2026-04",2350,9640,7800,4532,2850,500,4,425],["Ramsinghpura","2026-04",6050,25400,6500,9119,3550,7519,20,711],["Sahbhagita","2026-04",11275,46780,11000,11289,3895,2500,28,2469],["Sambhariya","2026-04",1312.5,5250,5500,2675,2850,0,0,44],["Saypura","2026-04",2625,10560,11000,5442,2850,500,1,2025],["Seeta Ram Pura","2026-04",3875,16700,6000,2747,0,0,20,215],["Shivdas Pura","2026-04",2112.5,9290,11000,0,0,0,14,95],["Shri Ram ki Nangal","2026-04",12825,53880,15500,10455,3430,1300,43,4686],["Shrikishan Pura","2026-04",6375,26400,10500,5341,2950,2000,15,4418],["Siroli","2026-04",11900,49100,13600,10850,3090,2300,25,1333],["Sukhdev Pura","2026-04",7800,31200,13500,12127,2850,500,0,2194],["Vatika","2026-04",11525,47360,15700,11721,7010,2600,21,2872],["Vidhani","2026-04",4900,20080,9900,6713,3420,500,8,1306],["Aandhi","2026-05",5600,30800,8000,8153,3633,500,140,5768],["Acharawala","2026-05",3275,10100,7000,6392,3550,500,0,321],["Baad Shyopur","2026-05",10025,40520,14000,13365,2950,1300,7,1954],["Bagru Khurd","2026-05",10365,41460,9000,5340,18765,500,0,1209],["Beelwa","2026-05",5475,22680,7500,3973,3240,500,13,186],["Bhondo ki Dhani","2026-05",11025,45000,9000,6882,2950,500,15,1054],["Dadiya","2026-05",4175,17180,7500,4555,2950,500,8,456],["Jairajpura","2026-05",7315,30160,7500,3953,3700,500,15,362],["Kallawala (Khedi Gokulpura)","2026-05",8654,35996,7500,7240,5100,1300,23,801],["Kapoorawala","2026-05",5125,20860,8500,2840,3810,2000,6,759],["Laxmipura","2026-05",4950,20700,6300,5490,2950,500,15,43],["Madrampura","2026-05",2500,11200,8000,3338,2950,2000,20,410],["Mathurawala","2026-05",7025,28580,12000,7572,3650,2100,8,1571],["Mohanpura","2026-05",10325,42680,12000,12195,3750,500,23,1155],["Muhana","2026-05",10325,42680,12000,12195,3750,500,23,1315],["Naya Vatika","2026-05",12400,51580,9000,15838,3650,2000,33,2036],["Pawaliya","2026-05",7100,28800,8300,6348,3960,500,8,581],["Prahladpura","2026-05",2675,10760,7800,4610,3100,500,1,426],["Ramsinghpura","2026-05",8675,36500,6500,8031,3850,500,30,741],["Sahbhagita","2026-05",12600,51660,11000,13869,2950,2500,21,2490],["Sambhariya","2026-05",1390,5560,5500,2175,2950,0,0,44],["Saypura","2026-05",3062.5,13110,11000,5655,2950,500,1,2026],["Seeta Ram Pura","2026-05",3130,13540,6000,3860,0,0,17,232],["Shivdas Pura","2026-05",1824.8,8999,5500,0,0,0,5,100],["Shri Ram ki Nangal","2026-05",12550,52960,15500,11789,4990,1300,46,4732],["Shrikishan Pura","2026-05",7212.5,30290,10500,6006,4100,2000,24,4442],["Siroli","2026-05",15150,61200,13600,12378,5090,2750,10,1343],["Sukhdev Pura","2026-05",8600,34400,13500,10971,2950,500,0,2194],["Vatika","2026-05",15975,65220,15700,8983,2950,3400,22,2894],["Vidhani","2026-05",5625,23040,9900,3535,2950,500,9,1324],["Aandhi","2026-06",5525,22700,8000,6763,4565,500,5,5773],["Acharawala","2026-06",2850,11400,7000,6252,3525,500,0,321],["Baad Shyopur","2026-06",8550,34500,14000,12125,3025,1300,5,1952],["Bagru Khurd","2026-06",7700,31940,9000,5785,5225,500,19,1228],["Barkheda","2026-06",2690,16400,5500,0,0,0,94,94],["Beelwa","2026-06",4075,17680,7500,5812,3125,500,12,198],["Bhondo ki Dhani","2026-06",10750,44440,9000,7373,3825,500,24,1078],["Dadiya","2026-06",4060,16720,7500,4625,3025,500,14,470],["Jairajpura","2026-06",5740,23560,7500,5183,3025,500,10,372],["Kallawala (Khedi Gokulpura)","2026-06",7785,32040,7500,8590,3225,1300,15,816],["Kapoorawala","2026-06",4975,20200,8500,3050,3625,2000,5,764],["Laxmipura","2026-06",4550,18620,6300,7606,3025,500,7,50],["Madrampura","2026-06",2800,13000,8000,4969,3025,500,30,440],["Mathurawala","2026-06",9025,36640,12000,12416,4265,500,9,1580],["Mohanpura","2026-06",8850,36300,12000,18261,3625,500,15,1170],["Muhana","2026-06",1450,6100,12000,2135,3025,500,5,1320],["Naya Vatika","2026-06",11450,47300,9000,20079,3725,500,26,2062],["Pawaliya","2026-06",5775,23400,8300,8588,4810,500,5,586],["Prahladpura","2026-06",1450,5980,7800,5317,3025,500,3,429],["Ramsinghpura","2026-06",6675,27600,6500,10579,3025,500,15,756],["Sahbhagita","2026-06",10838,44492,11000,12142,3025,2500,19,2488],["Saypura","2026-06",3975,15900,11000,6600,3025,1700,1,2027],["Seeta Ram Pura","2026-06",3875,16700,6000,3825,0,0,20,252],["Shivdas Pura","2026-06",1825,7720,5500,2523,893,0,7,107],["Shri Ram ki Nangal","2026-06",13175,54740,15500,14401,3965,500,34,4766],["Shrikishan Pura","2026-06",6900,28740,10500,7111,3025,500,19,4461],["Siroli","2026-06",12060,48840,13600,13725,3025,2750,10,1353],["Sukhdev Pura","2026-06",7200,28800,13500,12737,3025,500,0,2194],["Vatika","2026-06",12275,50300,15700,11021,5675,4350,20,2914],["Vidhani","2026-06",4375,17800,9900,3061,3025,500,5,1329],["Aandhi","2026-07",4625,18740,8000,6231,7205,500,4,5777],["Acharawala","2026-07",4075,16300,7000,11369,7925,500,0,321],["Baad Shyopur","2026-07",8150,33380,14000,11641,8855,1300,13,1965],["Bagru Khurd","2026-07",9025,36640,9000,22871,7205,500,9,1237],["Barkheda","2026-07",2137.5,10970,5500,0,0,0,29,123],["Beelwa","2026-07",4225,17380,7500,5567,7505,500,8,206],["Bhondo ki Dhani","2026-07",9500,38960,9000,19373,7205,500,16,1094],["Dadiya","2026-07",3700,15280,7500,6161,7205,500,5,475],["Jairajpura","2026-07",6238.5,25434,7500,4713,7655,500,8,380],["Kallawala (Khedi Gokulpura)","2026-07",7995,33000,7500,5683,7895,1300,17,833],["Kapoorawala","2026-07",4700,19220,8500,1593,7580,2000,7,771],["Laxmipura","2026-07",4400,17900,6300,8852,7205,500,5,55],["Madrampura","2026-07",2975,12500,8000,4871,7205,500,10,450],["Mathurawala","2026-07",11000,44300,12000,11050,7850,500,5,1585],["Mohanpura","2026-07",9000,36900,12000,18177,8205,500,15,1185],["Muhana","2026-07",1375,5680,12000,1921,7205,500,3,1323],["Naya Vatika","2026-07",11150,46760,9000,12931,7805,500,36,2098],["Padampura","2026-07",3325,13300,5500,0,490,0,0,0],["Pawaliya","2026-07",5850,23460,8300,7408,7905,500,1,587],["Prahladpura","2026-07",1125,4560,7800,3223,7205,500,1,430],["Ramsinghpura","2026-07",6050,24920,6500,8760,7205,1300,12,768],["Sahbhagita","2026-07",13050,54240,11000,15349,7205,2500,34,2522],["Saypura","2026-07",3775,15100,11000,6161,7205,1700,0,2027],["Seeta Ram Pura","2026-07",3900,16860,6000,5293,450,0,21,273],["Shivdas Pura","2026-07",2125,9220,5500,2673,0,0,12,119],["Shri Ram ki Nangal","2026-07",14675,62060,15500,13924,7935,500,56,4822],["Shrikishan Pura","2026-07",6225,26040,10500,6821,7335,500,19,4480],["Siroli","2026-07",13525,54340,13600,13731,7445,2300,4,1357],["Sukhdev Pura","2026-07",4927.5,19710,13500,10811,9155,500,0,2194],["Vatika","2026-07",11125,45340,15700,12135,7775,3350,14,2908],["Vidhani","2026-07",4825,19960,9900,3004,7205,500,11,1340],["Aandhi","2026-08",5700,22800,8000,8455,18213,500,0,5777],["Acharawala","2026-08",2750,10700,11000,11369,4333,500,5,326],["Baad Shyopur","2026-08",8025,32700,14000,11965,4863,1300,10,1975],["Bagru Khurd","2026-08",9400,39040,9000,11041,3613,500,24,1261],["Barkheda","2026-08",1965,8760,5500,1205,0,0,15,138],["Beelwa","2026-08",2775,11340,7500,4789,4363,500,4,210],["Bhondo ki Dhani","2026-08",7750,31600,9000,6541,3613,500,10,1104],["Dadiya","2026-08",2580,10800,7500,3321,3613,500,5,480],["Jairajpura","2026-08",5075,21320,7500,4885,3613,500,17,397],["Kallawala (Khedi Gokulpura)","2026-08",6467.5,26950,7500,9602,4613,1300,18,834],["Kapoorawala","2026-08",4175,17180,8500,2943,4213,2000,8,779],["Laxmipura","2026-08",4175,16820,6300,6855,3793,500,2,57],["Madrampura","2026-08",2575,10900,8000,4403,3613,500,10,460],["Mathurawala","2026-08",10875,43500,12000,9540,4537,500,0,1585],["Mohanpura","2026-08",7925,32780,12000,13449,5213,500,18,1203],["Muhana","2026-08",1212.5,4850,12000,1623,3613,500,0,1323],["Naya Vatika","2026-08",9725,41060,9000,21438,4513,500,36,2134],["Padampura","2026-08",2925,12120,5500,3300,0,0,7,7],["Pawaliya","2026-08",4575,18340,8300,7244,4463,500,1,588],["Prahladpura","2026-08",750,3060,7800,3296,3913,500,1,431],["Ramsinghpura","2026-08",5775,24180,6500,7640,4413,1300,18,786],["Sahbhagita","2026-08",10625,43940,11000,15233,9013,2500,24,2546],["Saypura","2026-08",3805,15220,11000,7107,4013,1700,0,2027],["Seeta Ram Pura","2026-08",2672.5,11530,6000,3617,0,0,14,287],["Shivdas Pura","2026-08",1920,7680,5500,421,0,0,0,119],["Shri Ram ki Nangal","2026-08",12050,51200,15500,14657,4393,500,50,4872],["Shrikishan Pura","2026-08",6525,27840,10500,6147,3613,500,29,4509],["Siroli","2026-08",11025,44280,13600,13431,6113,2300,3,1360],["Sukhdev Pura","2026-08",5007.5,20030,13500,11247,3613,500,0,2194],["Vatika","2026-08",9800,40280,15700,12183,3613,3350,18,2926],["Vidhani","2026-08",4825,19960,9900,3004,4183,500,11,1351],["Aandhi","2026-09",4705,18820,8000,11553,6255,500,0,5777],["Acharawala","2026-09",2500,10000,11000,5442,6255,500,0,326],["Baad Shyopur","2026-09",6850,28900,14000,11092,7255,500,25,2000],["Bagru Khurd","2026-09",6225,25620,9000,8160,7905,500,12,1273],["Barkheda","2026-09",3135,14040,5500,1208,300,0,25,163],["Beelwa","2026-09",4000,16360,7500,4803,6255,500,6,216],["Bhondo ki Dhani","2026-09",7500,30420,9000,12591,6405,500,7,1111],["Dadiya","2026-09",3025,12580,7500,3266,6255,500,15,495],["Jairajpura","2026-09",6000,25500,7500,5063,6255,500,25,422],["Kallawala (Khedi Gokulpura)","2026-09",6822.5,27950,7500,7670,6455,1300,11,845],["Kapoorawala","2026-09",4200,17160,8500,3460,6255,2000,6,777],["Laxmipura","2026-09",3925,16000,6300,6148,6255,500,5,62],["Madrampura","2026-09",2825,12020,8000,5642,6255,500,12,472],["Mathurawala","2026-09",8550,35400,12000,10917,6695,500,20,1605],["Mohanpura","2026-09",7400,30320,12000,12756,6475,500,12,1215],["Muhana","2026-09",1130,4520,12000,1224,6255,500,0,1323],["Naya Vatika","2026-09",8275,34600,9000,23582,6255,500,25,2159],["Padampura","2026-09",2275,10000,5500,2530,200,0,15,22],["Pawaliya","2026-09",6050,24440,8300,5968,7045,500,4,592],["Prahladpura","2026-09",715,2920,7800,2752,6255,500,1,432],["Ramsinghpura","2026-09",5075,21260,6500,6500,6955,1300,16,802],["Sahbhagita","2026-09",10700,43700,11000,15069,6255,2500,15,2561],["Saypura","2026-09",3250,13000,11000,6890,6255,1700,0,2027],["Seeta Ram Pura","2026-09",4705,19780,6000,3913,0,0,16,303],["Shivdas Pura","2026-09",1865,7460,5500,1251,0,0,0,119],["Shri Ram ki Nangal","2026-09",12500,51920,15500,14657,6255,500,32,4904],["Shrikishan Pura","2026-09",5775,24600,10500,5961,6255,500,25,4534],["Siroli","2026-09",11050,44440,13600,12416,6495,2300,4,1364],["Sukhdev Pura","2026-09",5675,22700,13500,11013,7255,500,0,2194],["Vatika","2026-09",11075,45200,15700,12231,7055,4000,15,2941],["Vidhani","2026-09",4725,19200,9900,2818,6255,500,5,1356]],"repairs":[["Aandhi","2026-04-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3250)",3250],["Acharawala","2026-04-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3350)",3350],["Baad Shyopur","2026-04-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3500)",3500],["Bagru Khurd","2026-04-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (2850)",2850],["Beelwa","2026-04-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (2850)",2850],["Bhondo ki Dhani","2026-04-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3340)",3340],["Dadiya","2026-04-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (5050)",5050],["Jairajpura","2026-04-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3250)",3250],["Kallawala (Khedi Gokulpura)","2026-04-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3970)Tank Cleaning(1600)",3970],["Kapoorawala","2026-04-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (4550) Grow Waterv Tank(1500)",4550],["Laxmipura","2026-04-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3050)",3050],["Madrampura","2026-04-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (2850)",2850],["Mathurawala","2026-04-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (7350)",7350],["Mohanpura","2026-04-01","Repairs and consumables: housekeeping (500) Repair & Maint.Exp. (5250)",5250],["Muhana","2026-04-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3210)",3210],["Naya Vatika","2026-04-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3500) Tank Cleaning (800)",3500],["Pawaliya","2026-04-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3670)",3670],["Prahladpura","2026-04-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (2850)",2850],["Ramsinghpura","2026-04-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3350)",3550],["Sahbhagita","2026-04-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3895)",3895],["Sambhariya","2026-04-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (2850)",2850],["Saypura","2026-04-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (2850)",2850],["Shri Ram ki Nangal","2026-04-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3430) Tank Cleaning (800)",3430],["Shrikishan Pura","2026-04-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (2950)",2950],["Siroli","2026-04-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3090) Grow Water Tank(1800)",3090],["Sukhdev Pura","2026-04-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (2850)",2850],["Vatika","2026-04-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (7010) Grow Water Tank (2100)",7010],["Vidhani","2026-04-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3420)",3420],["Aandhi","2026-05-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3633)",3633],["Acharawala","2026-05-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3550)",3550],["Baad Shyopur","2026-05-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (2950) Tank Cleaning (800)",2950],["Bagru Khurd","2026-05-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (2950) Motor Repair (2615) Invetor Batery New (13200)",18765],["Beelwa","2026-05-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3240)",3240],["Bhondo ki Dhani","2026-05-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3340)",2950],["Dadiya","2026-05-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (5050)",2950],["Jairajpura","2026-05-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3700)",3700],["Kallawala (Khedi Gokulpura)","2026-05-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (5100)Tank Cleaning(800)",5100],["Kapoorawala","2026-05-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3810) Grow Waterv Tank(1500)",3810],["Laxmipura","2026-05-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (2950)",2950],["Madrampura","2026-05-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (2950)",2950],["Mathurawala","2026-05-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3650) Tank Cleaning (1600)",3650],["Mohanpura","2026-05-01","Repairs and consumables: housekeeping (500) Repair & Maint.Exp. (3750)",3750],["Muhana","2026-05-01","Repairs and consumables: housekeeping (500) Repair & Maint.Exp. (3750)",3750],["Naya Vatika","2026-05-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3650) Tank Cleaning (1500)",3650],["Pawaliya","2026-05-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3960)",3960],["Prahladpura","2026-05-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3100)",3100],["Ramsinghpura","2026-05-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3850)",3850],["Sahbhagita","2026-05-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (2950)",2950],["Sambhariya","2026-05-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (2850)",2950],["Saypura","2026-05-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (2850)",2950],["Shri Ram ki Nangal","2026-05-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (4990) Tank Cleaning (800)",4990],["Shrikishan Pura","2026-05-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (4100) Tank Cleaning (1500)",4100],["Siroli","2026-05-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (5090) Grow Water Tank(1800)",5090],["Sukhdev Pura","2026-05-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (2850)",2950],["Vatika","2026-05-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (7010) Grow Water Tank (2950)",2950],["Vidhani","2026-05-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (2950)",2950],["Aandhi","2026-06-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (4565)",4565],["Acharawala","2026-06-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3525)",3525],["Baad Shyopur","2026-06-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3025) Tank Cleaning (800)",3025],["Bagru Khurd","2026-06-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3025) CC TV Repair (2200)",5225],["Beelwa","2026-06-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3125)",3125],["Bhondo ki Dhani","2026-06-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3825)",3825],["Dadiya","2026-06-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3025)",3025],["Jairajpura","2026-06-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3025)",3025],["Kallawala (Khedi Gokulpura)","2026-06-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3225)Tank Cleaning(800)",3225],["Kapoorawala","2026-06-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3625) Grow Waterv Tank(1500)",3625],["Laxmipura","2026-06-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3025)",3025],["Madrampura","2026-06-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3025)",3025],["Mathurawala","2026-06-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (4265)",4265],["Mohanpura","2026-06-01","Repairs and consumables: housekeeping (500) Repair & Maint.Exp. (3625)",3625],["Muhana","2026-06-01","Repairs and consumables: housekeeping (500) Repair & Maint.Exp. (3025)",3025],["Naya Vatika","2026-06-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3725)",3725],["Pawaliya","2026-06-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (4810)",4810],["Prahladpura","2026-06-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3025)",3025],["Ramsinghpura","2026-06-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3025)",3025],["Sahbhagita","2026-06-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3025)",3025],["Saypura","2026-06-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3025) Tank Cleaning (1200)",3025],["Shivdas Pura","2026-06-01","Repairs and consumables: No Exp.",893],["Shri Ram ki Nangal","2026-06-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3965)",3965],["Shrikishan Pura","2026-06-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3025)",3025],["Siroli","2026-06-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3025)",3025],["Sukhdev Pura","2026-06-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3025)",3025],["Vatika","2026-06-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (5675) Grow Water Tank (3850)",5675],["Vidhani","2026-06-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3025)",3025],["Aandhi","2026-07-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (7205)",7205],["Acharawala","2026-07-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (7925)",7925],["Baad Shyopur","2026-07-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (8855) Tank Cleaning (800)",8855],["Bagru Khurd","2026-07-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (7205)",7205],["Beelwa","2026-07-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (7505)",7505],["Bhondo ki Dhani","2026-07-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (7205)",7205],["Dadiya","2026-07-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (7205)",7205],["Jairajpura","2026-07-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (7655)",7655],["Kallawala (Khedi Gokulpura)","2026-07-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (7895)Tank Cleaning(800)",7895],["Kapoorawala","2026-07-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (7580) Grow Waterv Tank(1500)",7580],["Laxmipura","2026-07-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (7205)",7205],["Madrampura","2026-07-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (7205)",7205],["Mathurawala","2026-07-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (7850)",7850],["Mohanpura","2026-07-01","Repairs and consumables: housekeeping (500) Repair & Maint.Exp. (7205) ATM Machine Repairing(1000)",8205],["Muhana","2026-07-01","Repairs and consumables: housekeeping (500) Repair & Maint.Exp. (7205)",7205],["Naya Vatika","2026-07-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (7805)",7805],["Padampura","2026-07-01","Repairs and consumables: Wiper and Pocha (490)",490],["Pawaliya","2026-07-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (7905)",7905],["Prahladpura","2026-07-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (7205)",7205],["Ramsinghpura","2026-07-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (7205)",7205],["Sahbhagita","2026-07-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (7205)",7205],["Saypura","2026-07-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (7205)",7205],["Seeta Ram Pura","2026-07-01","Repairs and consumables: Boring Motor Repairing (450)",450],["Shri Ram ki Nangal","2026-07-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card ,Lock(7935)",7935],["Shrikishan Pura","2026-07-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (7335)",7335],["Siroli","2026-07-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (7445)",7445],["Sukhdev Pura","2026-07-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card,Boring Motor (9155)",9155],["Vatika","2026-07-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (7775) Grow Water Tank (2850)",7775],["Vidhani","2026-07-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (7205)",7205],["Aandhi","2026-08-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3613) New Battery Purchase (14600)",18213],["Acharawala","2026-08-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3613)",4333],["Baad Shyopur","2026-08-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3613) Tank Cleaning (800) Misc.Exp.(1250)",4863],["Bagru Khurd","2026-08-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3613)",3613],["Beelwa","2026-08-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3613) Misc.Exp.(750)",4363],["Bhondo ki Dhani","2026-08-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3613)",3613],["Dadiya","2026-08-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3613)",3613],["Jairajpura","2026-08-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3613)",3613],["Kallawala (Khedi Gokulpura)","2026-08-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3613)Tank Cleaning(800) Misc.Exp.(1000)",4613],["Kapoorawala","2026-08-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3613) Grow Waterv Tank(1500)Battery Water (600)",4213],["Laxmipura","2026-08-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3613) Misc.Exp.(180)",3793],["Madrampura","2026-08-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3613)",3613],["Mathurawala","2026-08-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3613) Misc.Exp.(924)",4537],["Mohanpura","2026-08-01","Repairs and consumables: housekeeping (500) Repair & Maint.Exp. (3613) ATM Machine Repairing(1600)",5213],["Muhana","2026-08-01","Repairs and consumables: housekeeping (500) Repair & Maint.Exp. (3613)",3613],["Naya Vatika","2026-08-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3613) Misc.Exp.(900)",4513],["Pawaliya","2026-08-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3613) Starter Cell and Brooms(850)",4463],["Prahladpura","2026-08-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3613) Misc.Exp.(300)",3913],["Ramsinghpura","2026-08-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3613)Misc.Exp.(800)",4413],["Sahbhagita","2026-08-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3613) Boring Pipe Line Repair(5400)",9013],["Saypura","2026-08-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3613) Misc.Exp.(400)",4013],["Shri Ram ki Nangal","2026-08-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card ,Lock(3613) Misc.Exp.(780)",4393],["Shrikishan Pura","2026-08-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3613)",3613],["Siroli","2026-08-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3613) Light Miter Cable (2500)",6113],["Sukhdev Pura","2026-08-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card,Boring Motor (3613)",3613],["Vatika","2026-08-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3613) Grow Water Tank (2850)",3613],["Vidhani","2026-08-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (3613) Misc.Exp.(570)",4183],["Aandhi","2026-09-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (6255)",6255],["Acharawala","2026-09-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (6255)",6255],["Baad Shyopur","2026-09-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (6255) Misc.Exp.(1000)",7255],["Bagru Khurd","2026-09-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (6255) Misc.Exp.(1650)",7905],["Barkheda","2026-09-01","Repairs and consumables: Condector (300)",300],["Beelwa","2026-09-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (6255)",6255],["Bhondo ki Dhani","2026-09-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (6255) Misc.Exp.(150)",6405],["Dadiya","2026-09-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (6255)",6255],["Jairajpura","2026-09-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (6255)",6255],["Kallawala (Khedi Gokulpura)","2026-09-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (6255)Tank Cleaning(800) Misc.Exp.(200)",6455],["Kapoorawala","2026-09-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (6255) Grow Waterv Tank(1500)",6255],["Laxmipura","2026-09-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (6255)",6255],["Madrampura","2026-09-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (6255)",6255],["Mathurawala","2026-09-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (6255) Misc.Exp.(400)",6695],["Mohanpura","2026-09-01","Repairs and consumables: housekeeping (500) Repair & Maint.Exp. (6255) Misc.Exp(220)",6475],["Muhana","2026-09-01","Repairs and consumables: housekeeping (500) Repair & Maint.Exp. (6255)",6255],["Naya Vatika","2026-09-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (6255)",6255],["Padampura","2026-09-01","Repairs and consumables: Valve and Wire (200)",200],["Pawaliya","2026-09-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (6255) Misc.Exp.(790)",7045],["Prahladpura","2026-09-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (6255)",6255],["Ramsinghpura","2026-09-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (6255)Misc.Exp.(700)",6955],["Sahbhagita","2026-09-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (6255)",6255],["Saypura","2026-09-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (6255)",6255],["Shri Ram ki Nangal","2026-09-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card ,Lock(6255)",6255],["Shrikishan Pura","2026-09-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (6255)",6255],["Siroli","2026-09-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (6255) Misc.Exp.(240)",6495],["Sukhdev Pura","2026-09-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card,Boring Motor (6255)",7255],["Vatika","2026-09-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (6255) Grow Water Tank (3500)",7055],["Vidhani","2026-09-01","Repairs and consumables: housekeeping (500) Repair & Maint Chemical and Filter and ATM Card (6255)",6255]]};
+const TAB_HEAD = {
+  Data:['ATM','Period','Cans','Revenue','Operator pay','Electricity','Repairs and consumables','Other costs','Uploaded at','New cards','Cards registered','Source'],
+  Repairs:['ATM','Date','What was repaired','Cost','Days shut','Fixed by','Notes','Source','Saved at'],
+  Checks:['ATM','Month','TDS','pH','Tanks cleaned','Filters changed','Pump OK','Wiring OK','Earthing OK','Card reader OK','No leaks','Days shut','Meter reading','Filled by','Notes','Saved at'],
+  ATMs:['ATM','Status']
+};
+const CHK_ITEMS=[["tanksCleaned","Tanks cleaned","Tanks cleaned (every 15 days)","Tanks not cleaned"],["filtersChanged","Filters changed","RO filters changed (every 30 days)","Filters not changed"],["pumpOk","Pump OK","Pump and motor working normally","Pump or motor fault"],["wiringOk","Wiring OK","Wiring safe, no burnt or loose wires","Wiring problem"],["earthingOk","Earthing OK","Earthing and circuit breaker OK","Earthing not OK"],["readerOk","Card reader OK","Card reader and taps working","Card reader fault"],["noLeaks","No leaks","No leaks","Leaks found"]];
 
 /* ---------- state ---------- */
-let RAW=[], SOURCE='sample', pendingRows=null;
-const st={from:null,to:null,atm:'',tab:'ov',sort:{k:'surplus',d:-1},sel:null};
+const S={atms:{},raw:[],monthly:[],repairs:[],checks:[],tab:"overview",period:"6",from:"",to:"",atm:"",sort:{money:["sur",-1]},src:"seed",updated:"",
+  cx:{line:"all",meas:"pc",bucket:""},dq:"",imp:null,pending:null,pendingRep:null};
+const $=s=>document.querySelector(s);
 const ls={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}},del:k=>{try{localStorage.removeItem(k)}catch(e){}}};
-const api=()=>ls.get('atm_api')||DEFAULT_API;
+const api=()=>ls.get("atm_api")||DEFAULT_API;
+const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const num=v=>{if(v==null||v==="")return 0;if(typeof v==="number")return Number.isFinite(v)?v:0;const n=parseFloat(String(v).replace(/[₹,\s]/g,""));return Number.isFinite(n)?n:0};
+const inr=v=>{const n=Math.round(num(v));const s=Math.abs(n).toLocaleString("en-IN");return (n<0?"−":"")+"₹"+s};
+const lakh=v=>{const n=num(v)/1e5;return (n<0?"−":"")+"₹"+Math.abs(n).toFixed(2)+" L"};
+const k=v=>{const n=num(v);const a=Math.abs(n);return (n<0?"−":"")+(a>=1e5?(a/1e5).toFixed(2)+"L":a>=1e3?(a/1e3).toFixed(1)+"k":Math.round(a))};
+const MN=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const mLabel=m=>{const [y,mm]=m.split("-");return MN[+mm-1]+" "+y};
+const mShort=m=>MN[+m.split("-")[1]-1];
+const mShortY=m=>MN[+m.split("-")[1]-1]+" "+m.slice(2,4);
+const daysIn=m=>{const [y,mm]=m.split("-").map(Number);return new Date(y,mm,0).getDate()};
+const atmName=id=>id;
+const costOf=r=>num(r.operatorPay)+num(r.electricity)+num(r.repairs)+num(r.otherCosts);
+const sum=(a,f)=>a.reduce((s,x)=>s+f(x),0);
+try{const t=ls.get("atmTab");if(t)S.tab=t;}catch(e){}
 
-/* ---------- helpers ---------- */
-const IN=n=>Math.round(n).toLocaleString('en-IN');
-const R=n=>(n<0?'−':'')+'₹'+IN(Math.abs(n));
-const L=n=>(n<0?'−':'')+'₹'+(Math.abs(n)/1e5).toFixed(2)+' L';
-const K=n=>(n<0?'−':'')+'₹'+(Math.abs(n)/1e3).toFixed(Math.abs(n)>=1e5?0:1)+'k';
-const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
-const sum=(a,f)=>a.reduce((s,x)=>s+(f?f(x):x),0);
-const MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const mlab=m=>MN[+m.slice(5,7)-1]+' '+m.slice(2,4);
-const num=v=>{if(v==null||v==='')return 0;if(typeof v==='number')return v;const n=parseFloat(String(v).replace(/[₹,\s]/g,''));return isNaN(n)?NaN:n};
+/* ---------- periods ---------- */
 function normPeriod(v){
-  if(v==null||v==='')return null;
-  if(v instanceof Date&&!isNaN(v))return v.getFullYear()+'-'+String(v.getMonth()+1).padStart(2,'0')+(v.getDate()>1?'-'+String(v.getDate()).padStart(2,'0'):'');
-  if(typeof v==='number'&&v>20000&&v<80000){const d=new Date(Math.round((v-25569)*864e5));return normPeriod(new Date(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()))}
-  let s=String(v).trim();
-  let m=s.match(/^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?/);if(m){const d=m[3]&&+m[3]>1?'-'+m[3].padStart(2,'0'):'';return m[1]+'-'+m[2].padStart(2,'0')+d}
-  m=s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);if(m){const d=+m[1]>1?'-'+m[1].padStart(2,'0'):'';return m[3]+'-'+m[2].padStart(2,'0')+d}
-  m=s.match(/^([A-Za-z]{3})[a-z]*[\s\-']+(\d{2,4})$/);if(m){const i=MN.findIndex(x=>x.toLowerCase()===m[1].toLowerCase());if(i>=0){const y=m[2].length===2?'20'+m[2]:m[2];return y+'-'+String(i+1).padStart(2,'0')}}
+  if(v==null||v==="")return null;
+  if(v instanceof Date&&!isNaN(v))return v.getFullYear()+"-"+String(v.getMonth()+1).padStart(2,"0")+(v.getDate()>1?"-"+String(v.getDate()).padStart(2,"0"):"");
+  if(typeof v==="number"&&v>20000&&v<80000){const d=new Date(Math.round((v-25569)*864e5));return normPeriod(new Date(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()))}
+  const s=String(v).trim();let m=s.match(/^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?/);
+  if(m){const d=m[3]&&+m[3]>1?"-"+m[3].padStart(2,"0"):"";return m[1]+"-"+m[2].padStart(2,"0")+d}
+  m=s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);if(m){const d=+m[1]>1?"-"+m[1].padStart(2,"0"):"";return m[3]+"-"+m[2].padStart(2,"0")+d}
+  m=s.match(/^([A-Za-z]{3})[a-z]*\.?[\s\-']+(\d{2,4})$/);if(m){const i=MN.findIndex(x=>x.toLowerCase()===m[1].toLowerCase());if(i>=0){const y=m[2].length===2?"20"+m[2]:m[2];return y+"-"+String(i+1).padStart(2,"0")}}
   return null;
 }
-const mkRow=a=>({atm:String(a[0]).trim(),period:normPeriod(a[1]),cans:num(a[2]),revenue:num(a[3]),op:num(a[4]),elec:num(a[5]),rep:num(a[6]),other:num(a[7])});
-const costOf=r=>r.op+r.elec+r.rep+r.other;
+function addMonths(m,n){let [y,mm]=m.split("-").map(Number);mm+=n;while(mm<1){mm+=12;y--}while(mm>12){mm-=12;y++}return y+"-"+String(mm).padStart(2,"0")}
+function allMonths(){return [...new Set(S.monthly.map(r=>r.month))].filter(Boolean).sort()}
+function periodMonths(){
+  const ms=allMonths(); if(!ms.length) return [];
+  if(S.period==="all") return ms;
+  if(S.period==="custom"){const f=S.from||ms[0],t=S.to||ms[ms.length-1];return ms.filter(m=>m>=f&&m<=t)}
+  return ms.slice(-Number(S.period));
+}
+function rowsIn(ms,ignoreAtm){return S.monthly.filter(r=>ms.includes(r.month)&&(ignoreAtm||!S.atm||r.atm===S.atm))}
+/* more than 24 months in view → charts group by financial year (April–March) */
+const fyOf=m=>{const y=+m.slice(0,4),mo=+m.slice(5,7);const s=mo>=4?y:y-1;return "FY "+s+"–"+String((s+1)%100).padStart(2,"0")};
+function buckets(ms){
+  if(ms.length<=24) return ms.map(m=>({key:m,label:ms.length>12?mShortY(m):mShort(m),title:mLabel(m),months:[m]}));
+  const g={};ms.forEach(m=>{const f=fyOf(m);(g[f]=g[f]||[]).push(m)});
+  return Object.keys(g).sort().map(f=>({key:f,label:f.replace("FY ",""),title:f+" ("+g[f].length+" months)",months:g[f]}));
+}
 
-/* aggregate raw rows → one record per ATM per month */
-function monthly(rows){
-  const m={};rows.forEach(r=>{const k=r.atm+'|'+r.period.slice(0,7);const o=m[k]||(m[k]={atm:r.atm,month:r.period.slice(0,7),cans:0,revenue:0,op:0,elec:0,rep:0,other:0});
-    ['cans','revenue','op','elec','rep','other'].forEach(f=>o[f]+=r[f]);});
-  return Object.values(m).map(o=>Object.assign(o,{costs:costOf(o),surplus:o.revenue-costOf(o)}));
-}
-let PM=[],MONTHS=[],ATMS=[];
+/* ---------- data build: raw rows (month or week) → one record per ATM per month ---------- */
 function rebuild(){
-  PM=monthly(RAW);MONTHS=[...new Set(PM.map(r=>r.month))].sort();ATMS=[...new Set(PM.map(r=>r.atm))].sort();
-  const fs=document.getElementById('from'),ts=document.getElementById('to'),as=document.getElementById('atm');
-  const opts=MONTHS.map(m=>`<option value="${m}">${mlab(m)}</option>`).join('');fs.innerHTML=opts;ts.innerHTML=opts;
-  as.innerHTML='<option value="">All ATMs</option>'+ATMS.map(a=>`<option>${esc(a)}</option>`).join('');
-  if(!st.from||!MONTHS.includes(st.from))st.from=MONTHS[Math.max(0,MONTHS.length-12)];
-  if(!st.to||!MONTHS.includes(st.to))st.to=MONTHS[MONTHS.length-1];
-  if(st.atm&&!ATMS.includes(st.atm))st.atm='';
-  fs.value=st.from;ts.value=st.to;as.value=st.atm;
-  const b=document.getElementById('src');b.textContent=SOURCE==='live'?'Live · Google Sheet · '+RAW.length+' rows':SOURCE==='local'?'Sample + unsaved upload':'Sample data · Apr–Sep 2026';b.className='badge'+(SOURCE==='live'?' live':'');
-  render();
+  const g={};
+  S.raw.forEach(r=>{if(!r.atm||!r.period)return;const m=r.period.slice(0,7);const key=r.atm+"|"+m;
+    const o=g[key]||(g[key]={atm:r.atm,month:m,cans:0,revenue:0,operatorPay:0,electricity:0,repairs:0,otherCosts:0,newCards:0,totalCards:null,_tp:"",source:r.source||""});
+    ["cans","revenue","operatorPay","electricity","repairs","otherCosts","newCards"].forEach(f=>o[f]+=num(r[f]));
+    if(r.totalCards!=null&&r.totalCards!==""&&r.period>=o._tp){o.totalCards=num(r.totalCards);o._tp=r.period}});
+  S.monthly=Object.values(g);
+  S.monthly.forEach(r=>{if(!S.atms[r.atm])S.atms[r.atm]={name:r.atm,status:"New site"}});
 }
-const inRange=r=>r.month>=st.from&&r.month<=st.to&&(!st.atm||r.atm===st.atm);
-const rangeMonths=()=>MONTHS.filter(m=>m>=st.from&&m<=st.to);
-const isOpen=r=>r&&r.cans>0;
 
 /* ---------- flags ---------- */
-const FLAGS=[
-  {id:'cpc',t:'Cost per can above ₹4',f:(r)=>r.cans>0&&r.costs/r.cans>4},
-  {id:'loss2',t:'Loss two months running',f:(r,prev)=>r.surplus<0&&prev&&prev.surplus<0&&prev.cans>0},
-  {id:'op',t:'Operator pay over half of revenue',f:(r)=>r.revenue>0&&r.op>r.revenue/2},
-  {id:'drop',t:'Cans 25%+ below own 3-month average',f:(r,prev,hist)=>{const h=hist.filter(isOpen);if(h.length<2)return false;const a=sum(h,x=>x.cans)/h.length;return r.cans<a*0.75}}
-];
-const byAM={};function idx(){for(const k in byAM)delete byAM[k];PM.forEach(r=>byAM[r.atm+'|'+r.month]=r)}
-function prevMonth(m,k=1){let y=+m.slice(0,4),mo=+m.slice(5,7)-k;while(mo<1){mo+=12;y--}return y+'-'+String(mo).padStart(2,'0')}
-function flagsOf(r){const prev=byAM[r.atm+'|'+prevMonth(r.month)];const hist=[1,2,3].map(k=>byAM[r.atm+'|'+prevMonth(r.month,k)]).filter(Boolean);
-  return isOpen(r)?FLAGS.filter(F=>F.f(r,prev,hist)):[]}
+function moneyFlags(atm,m){
+  const rs=S.monthly.filter(r=>r.atm===atm).sort((a,b)=>a.month<b.month?-1:1);
+  const i=rs.findIndex(r=>r.month===m); if(i<0) return null;
+  const r=rs[i],c=costOf(r),f=[];
+  if(num(r.cans)>0&&c/num(r.cans)>4) f.push(["Cost per can above ₹4","bad"]);
+  if(num(r.revenue)-c<0&&i>0&&num(rs[i-1].revenue)-costOf(rs[i-1])<0) f.push(["Loss two months running","bad"]);
+  if(num(r.revenue)>0&&num(r.operatorPay)>0.5*num(r.revenue)) f.push(["Operator pay over half of revenue","warn"]);
+  const base=rs.slice(0,2).map(x=>num(x.cans)); const b=base.length?base.reduce((a,b)=>a+b,0)/base.length:0;
+  if(b>0&&num(r.cans)<0.75*b) f.push(["Sales 25%+ below its first two months","warn"]);
+  return f;
+}
+function healthFlags(atm,upTo){
+  const cs=S.checks.filter(c=>c.atm===atm&&(!upTo||c.month<=upTo)).sort((a,b)=>a.month<b.month?1:-1);
+  const f=[]; const c=cs[0];
+  if(c){
+    const tds=Number(c.tds),ph=Number(c.ph);
+    if(c.tds!==""&&c.tds!=null&&Number.isFinite(tds)&&tds>500) f.push(["TDS "+tds+" above 500","bad"]);
+    if(c.ph!==""&&c.ph!=null&&Number.isFinite(ph)&&(ph<6.5||ph>8.5)) f.push(["pH "+ph+" outside 6.5–8.5","warn"]);
+    CHK_ITEMS.forEach(([key,,,bad])=>{if(c[key]==="no") f.push([bad,key==="wiringOk"||key==="earthingOk"?"bad":"warn"])});
+    if(num(c.downtimeDays)>=3) f.push([num(c.downtimeDays)+" days shut","warn"]);
+  }
+  const ref=upTo||(c&&c.month)||"";const since=ref?addMonths(ref,-2):"";
+  const recent=S.repairs.filter(r=>r.atm===atm&&r.source!=="Monthly sheet"&&(!since||(r.date||"").slice(0,7)>=since));
+  if(recent.length>=2) f.push([recent.length+" repairs in 3 months","warn"]);
+  return {flags:f,last:c};
+}
 
 /* ---------- charts (plain SVG) ---------- */
-const T=(x,y,s,o={})=>`<text x="${x}" y="${y}" font-size="${o.fs||12}" ${o.a?`text-anchor="${o.a}"`:''} fill="${o.c||C.ink2}" ${o.w?`font-weight="${o.w}"`:''}>${esc(s)}</text>`;
-function niceStep(r){const p=Math.pow(10,Math.floor(Math.log10(r||1)));const n=r/p;return (n<=1?1:n<=2?2:n<=5?5:10)*p}
-function barsLine(cats,series,lineVals,o={}){
-  const W=1000,H=o.h||300,l=60,r=W-20,top=20,bot=H-34,n=cats.length;
-  const all=series.flatMap(s=>s.vals).concat(lineVals||[]).filter(v=>v!=null);
-  let hi=Math.max(0,...all),lo=Math.min(0,...all);const step=niceStep((hi-lo)/5);hi=Math.ceil(hi/step)*step;lo=Math.floor(lo/step)*step;if(hi===lo)hi=lo+1;
-  const y=v=>bot-(v-lo)/(hi-lo)*(bot-top),gw=(r-l)/n,ns=series.length,bw=Math.max(2,Math.min(26,(gw-6)/ns-2));
-  let b='';for(let v=lo;v<=hi+1e-9;v+=step){b+=`<line x1="${l}" x2="${r}" y1="${y(v)}" y2="${y(v)}" stroke="${v===0?'#9CB4C8':C.grid}"/>`+T(l-6,y(v)+4,o.fmt?o.fmt(v):K(v),{a:'end',fs:11,c:C.muted})}
-  const every=Math.ceil(n/14);
-  cats.forEach((c,i)=>{const cx=l+gw*i+gw/2;series.forEach((s,j)=>{const v=s.vals[i];if(v==null)return;const x=cx-(ns*(bw+2))/2+j*(bw+2);const y0=y(Math.max(0,v)),hh=Math.abs(y(v)-y(0));
-      b+=`<rect x="${x}" y="${y0}" width="${bw}" height="${Math.max(hh,0.5)}" rx="2" fill="${typeof s.c==='function'?s.c(v):s.c}"><title>${esc(c)} · ${s.n}: ${R(v)}</title></rect>`});
-    if(i%every===0)b+=T(cx,H-12,c,{a:'middle',fs:11.5,c:C.muted})});
-  if(lineVals){let d='',pen=false;lineVals.forEach((v,i)=>{if(v==null){pen=false;return}const x=l+gw*i+gw/2;d+=(pen?'L':'M')+x.toFixed(1)+','+y(v).toFixed(1);pen=true});
-    b+=`<path d="${d}" fill="none" stroke="${C.navy}" stroke-width="2.5"/>`;lineVals.forEach((v,i)=>{if(v==null)return;const x=l+gw*i+gw/2;b+=`<circle cx="${x}" cy="${y(v)}" r="3.5" fill="${v<0?C.red:C.navy}"><title>${esc(cats[i])} · surplus: ${R(v)}</title></circle>`})}
-  return `<svg class="ch" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.aria||'')}">${b}</svg>`;
+function niceMax(v){if(v<=0)return 1;const p=Math.pow(10,Math.floor(Math.log10(v)));const n=v/p;return (n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10)*p}
+function barsChart(bks,series,opt){
+  // series: [{label,color,values[]}] side by side; opt.line {label,color,values}; opt.act → clickable bars
+  const W=720,H=opt.h||260,L=56,R=12,T=16,B=34;
+  const all=series.flatMap(s=>s.values).concat(opt.line?opt.line.values:[]).concat(opt.avg!=null?[opt.avg]:[]);
+  const max=niceMax(Math.max(0,...all)),step=max/4,lo=Math.min(0,...all),min=lo<0?-step*Math.ceil(-lo/step):0,nt=Math.round((max-min)/step);
+  const y=v=>T+(max-v)/(max-min)*(H-T-B);
+  const gw=(W-L-R)/bks.length,bw=Math.min(28,(gw-10)/series.length);
+  const fmt=opt.fmt||(v=>k(v));
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(opt.aria||"")}" style="max-width:100%;height:auto">`;
+  for(let i=0;i<=nt;i++){const v=min+step*i;s+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${L-6}" y="${y(v)+4}" font-size="11" text-anchor="end">${fmt(v)}</text>`}
+  bks.forEach((b,i)=>{const x0=L+i*gw+(gw-bw*series.length)/2;const selB=opt.sel&&opt.sel===b.key;
+    if(opt.act)s+=`<g data-act="${opt.act}" data-v="${esc(b.key)}">`;
+    if(selB)s+=`<rect x="${L+i*gw+2}" y="${T}" width="${gw-4}" height="${H-T-B}" fill="var(--soft)"/>`;
+    series.forEach((se,j)=>{const v=se.values[i]||0;const yy=y(Math.max(v,0)),h=Math.abs(y(v)-y(0));s+=`<rect x="${x0+j*bw}" y="${yy}" width="${Math.max(bw-2,1)}" height="${Math.max(h,0)}" rx="2" fill="${se.color}"><title>${esc(se.label+" · "+b.title+": "+fmt(v))}</title></rect>`});
+    if(opt.act)s+=`<rect x="${L+i*gw}" y="${T}" width="${gw}" height="${H-T-B}" fill="transparent"><title>${esc(b.title+(opt.actTitle?" · "+opt.actTitle:""))}</title></rect></g>`;
+    s+=`<text x="${L+i*gw+gw/2}" y="${H-12}" font-size="12" text-anchor="middle" ${selB?'style="fill:var(--ink);font-weight:700"':""}>${esc(b.label)}</text>`});
+  if(opt.line){const pts=opt.line.values.map((v,i)=>[L+i*gw+gw/2,y(v)]);
+    s+=`<polyline points="${pts.map(p=>p.join(",")).join(" ")}" fill="none" stroke="${opt.line.color}" stroke-width="3"/>`;
+    pts.forEach((p,i)=>{s+=`<circle cx="${p[0]}" cy="${p[1]}" r="${i===pts.length-1?5:3.5}" fill="${opt.line.values[i]<0?"var(--bad)":opt.line.color}"><title>${esc(opt.line.label+" · "+bks[i].title+": "+inr(opt.line.values[i]))}</title></circle>`});}
+  if(opt.avg!=null){s+=`<line x1="${L}" x2="${W-R}" y1="${y(opt.avg)}" y2="${y(opt.avg)}" stroke="var(--ink)" stroke-dasharray="5 5" stroke-width="1.4"/><text x="${W-R-4}" y="${y(opt.avg)-6}" font-size="11.5" text-anchor="end" style="fill:var(--ink);font-weight:700">${esc(opt.avgLabel||"Average")}: ${fmt(opt.avg)}</text>`}
+  s+=`<line x1="${L}" x2="${W-R}" y1="${y(0)}" y2="${y(0)}" stroke="var(--muted)" stroke-width="1.2"/></svg>`;
+  return s;
 }
-function lineChart(cats,vals,o={}){
-  const W=o.w||1000,H=o.h||220,l=50,r=W-20,top=16,bot=H-30,n=cats.length,v2=vals.filter(v=>v!=null).concat(o.ref?[o.ref]:[]);
-  let lo=Math.min(...v2),hi=Math.max(...v2);const pad=(hi-lo)*0.15||1;lo=Math.max(0,lo-pad);hi+=pad;
-  const x=i=>l+(r-l)*(n===1?0.5:i/(n-1)),y=v=>bot-(v-lo)/(hi-lo)*(bot-top);let b='';
-  for(let k=0;k<=4;k++){const v=lo+(hi-lo)*k/4;b+=`<line x1="${l}" x2="${r}" y1="${y(v)}" y2="${y(v)}" stroke="${C.grid}"/>`+T(l-6,y(v)+4,(o.fmt||(z=>'₹'+z.toFixed(2)))(v),{a:'end',fs:11,c:C.muted})}
-  if(o.ref)b+=`<line x1="${l}" x2="${r}" y1="${y(o.ref)}" y2="${y(o.ref)}" stroke="${C.red}" stroke-dasharray="6 4" stroke-width="1.5"/>`+T(r,y(o.ref)-6,o.refLab||'',{a:'end',fs:11.5,c:C.red,w:700});
-  let d='',pen=false;vals.forEach((v,i)=>{if(v==null){pen=false;return}d+=(pen?'L':'M')+x(i).toFixed(1)+','+y(v).toFixed(1);pen=true});
-  b+=`<path d="${d}" fill="none" stroke="${C.blue}" stroke-width="2.5"/>`;const every=Math.ceil(n/(W<800?7:14));
-  vals.forEach((v,i)=>{if(i%every===0)b+=T(x(i),H-10,cats[i],{a:'middle',fs:11.5,c:C.muted});if(v==null)return;b+=`<circle cx="${x(i)}" cy="${y(v)}" r="3.5" fill="${o.ref&&v>o.ref?C.red:C.blue}"><title>${esc(cats[i])}: ₹${v.toFixed(2)}</title></circle>`});
-  return `<svg class="ch" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.aria||'')}">${b}</svg>`;
+function stackChart(bks,parts,opt){
+  const W=720,H=opt.h||240,L=56,R=12,T=14,B=34;
+  const tot=bks.map((_,i)=>parts.reduce((a,p)=>a+(p.values[i]||0),0));
+  const max=niceMax(Math.max(...tot,opt.ref||0));const y=v=>T+(max-v)/max*(H-T-B);
+  const gw=(W-L-R)/bks.length,bw=Math.min(46,gw*.6);
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(opt.aria||"")}" style="max-width:100%;height:auto">`;
+  for(let i=0;i<=4;i++){const v=max*i/4;s+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L-6}" y="${y(v)+4}" font-size="11" text-anchor="end">${opt.fmt(v)}</text>`}
+  bks.forEach((b,i)=>{let acc=0;const x=L+i*gw+(gw-bw)/2;const selB=opt.sel&&opt.sel===b.key;
+    if(opt.act)s+=`<g data-act="${opt.act}" data-v="${esc(b.key)}">`;
+    if(selB)s+=`<rect x="${L+i*gw+2}" y="${T}" width="${gw-4}" height="${H-T-B}" fill="var(--soft)"/>`;
+    parts.forEach(p=>{const v=p.values[i]||0;s+=`<rect x="${x}" y="${y(acc+v)}" width="${bw}" height="${Math.max(0,y(acc)-y(acc+v))}" fill="${p.color}"><title>${esc(p.label+" · "+b.title+": "+opt.fmt(v))}</title></rect>`;acc+=v});
+    if(opt.act)s+=`</g>`;
+    if(bks.length<=18)s+=`<text x="${x+bw/2}" y="${y(acc)-5}" font-size="11.5" text-anchor="middle" style="fill:var(--ink);font-weight:700">${opt.fmt(acc)}</text>`;
+    s+=`<text x="${L+i*gw+gw/2}" y="${H-12}" font-size="12" text-anchor="middle" ${selB?'style="fill:var(--ink);font-weight:700"':""}>${esc(b.label)}</text>`});
+  if(opt.ref){s+=`<line x1="${L}" x2="${W-R}" y1="${y(opt.ref)}" y2="${y(opt.ref)}" stroke="var(--bad)" stroke-dasharray="6 5" stroke-width="1.6"/><text x="${L+6}" y="${y(opt.ref)-6}" font-size="11.5" text-anchor="start" style="fill:var(--bad);font-weight:700">${esc(opt.refLabel)}</text>`}
+  return s+`</svg>`;
 }
-function stackChart(cats,parts,o={}){
-  const W=o.w||1000,H=o.h||260,l=60,r=W-20,top=14,bot=H-30,n=cats.length;const tots=cats.map((_,i)=>sum(parts,p=>p.vals[i]||0));
-  let hi=Math.max(...tots,1);const step=niceStep(hi/5);hi=Math.ceil(hi/step)*step;const y=v=>bot-v/hi*(bot-top),gw=(r-l)/n,bw=Math.max(3,Math.min(40,gw-8));let b='';
-  for(let v=0;v<=hi+1e-9;v+=step)b+=`<line x1="${l}" x2="${r}" y1="${y(v)}" y2="${y(v)}" stroke="${C.grid}"/>`+T(l-6,y(v)+4,K(v),{a:'end',fs:11,c:C.muted});
-  const every=Math.ceil(n/(W<800?8:14));
-  cats.forEach((c,i)=>{const cx=l+gw*i+gw/2;let acc=0;parts.forEach(p=>{const v=p.vals[i]||0;if(v<=0)return;b+=`<rect x="${cx-bw/2}" y="${y(acc+v)}" width="${bw}" height="${y(acc)-y(acc+v)}" fill="${p.c}"><title>${esc(c)} · ${p.n}: ${R(v)}</title></rect>`;acc+=v});
-    if(i%every===0)b+=T(cx,H-10,c,{a:'middle',fs:11.5,c:C.muted})});
-  return `<svg class="ch" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.aria||'')}">${b}</svg>`;
-}
-const leg=items=>`<div class="legend">${items.map(([c,t])=>`<span><i style="background:${c}"></i>${t}</span>`).join('')}</div>`;
-const kpi=(k,v,d,cls='')=>`<div class="kpi ${cls}"><p class="k">${k}</p><p class="v">${v}</p>${d?`<p class="d">${d}</p>`:''}</div>`;
+const legend=items=>`<div class="legend">${items.map(([c,l])=>`<span><i style="background:${c}"></i>${esc(l)}</span>`).join("")}</div>`;
+
+/* ---------- aggregate ---------- */
+function agg(rs){const o={cans:sum(rs,r=>num(r.cans)),rev:sum(rs,r=>num(r.revenue)),op:sum(rs,r=>num(r.operatorPay)),pow:sum(rs,r=>num(r.electricity)),rep:sum(rs,r=>num(r.repairs)),oth:sum(rs,r=>num(r.otherCosts)),newCards:sum(rs,r=>num(r.newCards)),n:new Set(rs.map(r=>r.atm)).size};o.cost=o.op+o.pow+o.rep+o.oth;o.sur=o.rev-o.cost;return o}
+function byBucket(bks,rows){return bks.map(b=>{const rs=rows.filter(r=>b.months.includes(r.month));const o=agg(rs);o.key=b.key;
+  const lastM=b.months[b.months.length-1];const lr=rs.filter(r=>r.month===lastM);o.lastN=lr.length;o.loss=lr.filter(r=>num(r.revenue)-costOf(r)<0).length;o.lastM=lastM;return o})}
+function byAtm(ms,rows){const g={};rows.forEach(r=>{const a=g[r.atm]||(g[r.atm]={atm:r.atm,cans:0,rev:0,op:0,pow:0,rep:0,oth:0,newCards:0,days:0,months:0,lastCards:null,lastM:""});
+  a.cans+=num(r.cans);a.rev+=num(r.revenue);a.op+=num(r.operatorPay);a.pow+=num(r.electricity);a.rep+=num(r.repairs);a.oth+=num(r.otherCosts);a.newCards+=num(r.newCards);a.days+=daysIn(r.month);a.months++;
+  if(r.month>a.lastM&&r.totalCards!=null&&r.totalCards!==""){a.lastM=r.month;a.lastCards=num(r.totalCards)}});
+  return Object.values(g).map(a=>({...a,cost:a.op+a.pow+a.rep+a.oth,sur:a.rev-(a.op+a.pow+a.rep+a.oth),lpd:a.days?a.cans*20/a.days:0,cpc:a.cans?(a.op+a.pow+a.rep+a.oth)/a.cans:0,cpcCard:a.lastCards&&a.months?a.cans/a.months/a.lastCards:0}))}
+const atmLink=id=>`<button type="button" class="lnk" data-act="atm" data-v="${esc(id)}" style="border:0;background:none;padding:0;font:inherit;color:inherit;cursor:pointer;text-align:left;text-decoration:underline dotted">${esc(atmName(id))}</button>`;
 
 /* ---------- views ---------- */
-function seriesByPeriod(rows){
-  const ms=rangeMonths();const yearly=ms.length>36;
-  const keys=yearly?[...new Set(ms.map(m=>m.slice(0,4)))]:ms;const g={};keys.forEach(k=>g[k]={revenue:0,costs:0,surplus:0,cans:0,op:0,elec:0,rep:0,other:0,atms:new Set()});
-  rows.forEach(r=>{const k=yearly?r.month.slice(0,4):r.month;const o=g[k];if(!o)return;['revenue','costs','surplus','cans','op','elec','rep','other'].forEach(f=>o[f]+=r[f]);if(r.cans>0)o.atms.add(r.atm)});
-  return {yearly,keys,labels:keys.map(k=>yearly?k:mlab(k)),g};
+function vOverview(ms){
+  const rows=rowsIn(ms),bks=buckets(ms),bm=byBucket(bks,rows);const t=agg(rows);
+  const sur=t.sur,cpc=t.cans?t.cost/t.cans:0,last=bm[bm.length-1]||{};
+  const atms=byAtm(ms,rows).sort((a,b)=>b.sur-a.sur);
+  const top=atms.slice(0,5),bot=atms.filter(a=>a.sur<0).slice(-5).reverse();
+  const tile=(kk,v,d,cls)=>`<div class="kpi ${cls||""}"><span class="k">${kk}</span><span class="v">${v}</span><span class="d">${d}</span></div>`;
+  return `<div class="kpis">
+    ${tile("Revenue",lakh(t.rev),ms.length+" month"+(ms.length>1?"s":""))}
+    ${tile("Running costs",lakh(t.cost),"operator, power, repairs, other")}
+    ${tile("Surplus",lakh(sur),"revenue − running costs",sur<0?"bad":"good")}
+    ${tile("Cost per can",t.cans?"₹"+cpc.toFixed(2):"–","against the ₹4 price",cpc>4?"bad":"good")}
+    ${tile("Water delivered",t.cans*20>=1e7?(t.cans*20/1e7).toFixed(2)+" crore L":(t.cans*20/1e5).toFixed(2)+" lakh L",Math.round(t.cans).toLocaleString("en-IN")+" cans of 20 L")}
+    ${tile("ATMs in loss",(last.loss??"–")+" of "+(last.lastN??"–"),last.lastM?"in "+mLabel(last.lastM):"",last.loss>0?"bad":"")}
+  </div>
+  <div class="box"><div class="row"><h2>Revenue, running costs and surplus${bks.length&&bks[0].months.length>1?" by financial year":" by month"}${S.atm?" · "+esc(atmName(S.atm)):""}</h2>${legend([["var(--rev)","Revenue"],["var(--cost)","Running costs"],["var(--good)","Surplus (line)"]])}</div>
+    ${ms.length?barsChart(bks,[{label:"Revenue",color:"var(--rev)",values:bm.map(x=>x.rev)},{label:"Running costs",color:"var(--cost)",values:bm.map(x=>x.cost)}],{line:{label:"Surplus",color:"var(--good)",values:bm.map(x=>x.sur)},act:"cxbucket",actTitle:"open in Cost explorer",aria:"Revenue and running costs with surplus line"}):'<div class="empty">No months in this period.</div>'}
+    <p class="note">Click a month to see its costs in the Cost explorer. Click an ATM name anywhere to show only that ATM.</p>
+  </div>
+  ${S.atm?"":`<div class="grid2e"><div class="box"><h2>Highest surplus in period</h2>${miniTable(top)}</div><div class="box"><h2>Largest losses in period</h2>${bot.length?miniTable(bot):'<div class="empty">No ATM made a loss in this period.</div>'}</div></div>`}`;
 }
-function vOverview(){
-  const rows=PM.filter(inRange),open=rows.filter(isOpen);if(!rows.length)return '<div class="card">No data in this range.</div>';
-  const rev=sum(rows,r=>r.revenue),cost=sum(rows,r=>r.costs),sur=rev-cost,cans=sum(rows,r=>r.cans);
-  const last=rangeMonths().slice(-1)[0],lastRows=rows.filter(r=>r.month===last&&isOpen(r)),lossLast=lastRows.filter(r=>r.surplus<0).length;
-  const S=seriesByPeriod(rows),k=S.keys;
-  const cpc=k.map(x=>S.g[x].cans?S.g[x].costs/S.g[x].cans:null);
-  const nm=rangeMonths().length;
-  let h=`<div class="kpis">${kpi('Revenue',L(rev),nm+' months')}${kpi('Running costs',L(cost),'operator, power, repairs, other')}${kpi('Surplus',L(sur),sur>=0?'kept by the network':'loss over the period',sur>=0?'good':'bad')}
-    ${kpi('Cans sold',IN(cans),(cans*20>=1e7?(cans*20/1e7).toFixed(2)+' crore':(cans*20/1e5).toFixed(1)+' lakh')+' litres')}${kpi('Cost per can',cans?'₹'+(cost/cans).toFixed(2):'–','price ₹4 a can',cans&&cost/cans>4?'bad':'')}
-    ${kpi('ATMs in loss, '+mlab(last),lossLast+' of '+lastRows.length,'in the latest month',lossLast?'bad':'good')}</div>`;
-  const worst=lastRows.sort((a,b)=>a.surplus-b.surplus).slice(0,3).filter(r=>r.surplus<0);
-  h+= worst.length?`<div class="insight r"><b>${mlab(last)}:</b> ${lossLast} ATM${lossLast>1?'s':''} ran at a loss; largest: ${worst.map(r=>esc(r.atm)+' ('+R(r.surplus)+')').join(', ')}. See <b>Warning flags</b>.</div>`
-    :`<div class="insight"><b>${mlab(last)}:</b> every open ATM covered its running costs.</div>`;
-  h+=`<div class="card"><h3>Revenue, running costs and surplus${S.yearly?' by year':' by month'}</h3><p class="what">Bars: revenue and running costs. Line: surplus (revenue − running costs).${S.yearly?' Long ranges are shown by year.':''}</p>
-    ${leg([[C.blue2,'Revenue'],['#9CB4C8','Running costs'],[C.navy,'Surplus']])}${barsLine(S.labels,[{n:'Revenue',c:C.blue2,vals:k.map(x=>S.g[x].revenue)},{n:'Running costs',c:'#9CB4C8',vals:k.map(x=>S.g[x].costs)}],k.map(x=>S.g[x].surplus),{aria:'Revenue, costs and surplus by period'})}</div>`;
-  h+=`<div class="grid2"><div class="card"><h3>Where the money goes</h3><p class="what">Running costs by type.</p>${leg([[C.op,'Operator pay'],[C.el,'Electricity'],[C.rp,'Repairs and consumables'],[C.ot,'Other']])}
-    ${stackChart(S.labels,[{n:'Operator pay',c:C.op,vals:k.map(x=>S.g[x].op)},{n:'Electricity',c:C.el,vals:k.map(x=>S.g[x].elec)},{n:'Repairs and consumables',c:C.rp,vals:k.map(x=>S.g[x].rep)},{n:'Other',c:C.ot,vals:k.map(x=>S.g[x].other)}],{aria:'Cost mix',w:640,h:340})}</div>
-    <div class="card"><h3>Cost per can</h3><p class="what">Running costs ÷ cans sold, against the ₹4 price.</p>${lineChart(S.labels,cpc,{ref:4,refLab:'₹4 price',w:420,h:300,aria:'Cost per can'})}</div></div>`;
-  return h;
+function miniTable(list){return `<div class="scroll"><table><thead><tr><th>ATM</th><th>Litres a day</th><th>₹ per can</th><th>Surplus</th></tr></thead><tbody>${list.map(a=>`<tr class="${a.sur<0?"loss":""}"><td>${atmLink(a.atm)}</td><td>${Math.round(a.lpd).toLocaleString("en-IN")}</td><td>₹${a.cpc.toFixed(2)}</td><td class="${a.sur<0?"neg":"pos"}">${inr(a.sur)}</td></tr>`).join("")}</tbody></table></div>`}
+function vMoney(ms){
+  const rows=rowsIn(ms),bks=buckets(ms),bm=byBucket(bks,rows);const [sk,sd]=S.sort.money;
+  const atms=byAtm(ms,rows).sort((a,b)=>sk==="atm"?atmName(a.atm).localeCompare(atmName(b.atm))*sd:(a[sk]-b[sk])*sd);
+  const cols=[["atm","ATM"],["cans","Cans"],["lpd","Litres a day"],["rev","Revenue"],["op","Operator"],["pow","Power"],["rep","Repairs"],["oth","Other"],["cost","Total cost"],["sur","Surplus"],["cpc","₹ per can"]];
+  const cell=(a,c)=>c==="atm"?`<td>${atmLink(a.atm)}</td>`:c==="cans"?`<td>${Math.round(a.cans).toLocaleString("en-IN")}</td>`:c==="lpd"?`<td>${Math.round(a.lpd).toLocaleString("en-IN")}</td>`:c==="cpc"?`<td class="${a.cpc>4?"neg":""}">₹${a.cpc.toFixed(2)}</td>`:c==="sur"?`<td class="${a.sur<0?"neg":"pos"}">${inr(a.sur)}</td>`:`<td>${inr(a[c])}</td>`;
+  return `<div class="box"><div class="row"><h2>Cost of one can, by cost line</h2>${legend([["var(--c-op)","Operator"],["var(--c-pow)","Power"],["var(--c-rep)","Repairs"],["var(--c-oth)","Other"]])}</div>
+    ${ms.length?stackChart(bks,[{label:"Operator",color:"var(--c-op)",values:bm.map(x=>x.cans?x.op/x.cans:0)},{label:"Power",color:"var(--c-pow)",values:bm.map(x=>x.cans?x.pow/x.cans:0)},{label:"Repairs",color:"var(--c-rep)",values:bm.map(x=>x.cans?x.rep/x.cans:0)},{label:"Other",color:"var(--c-oth)",values:bm.map(x=>x.cans?x.oth/x.cans:0)}],{fmt:v=>"₹"+v.toFixed(2),ref:4,refLabel:"₹4 price",act:"cxbucket",aria:"Cost per can by cost line each month"}):""}
+    <p class="note">Each bar is total running cost ÷ cans sold that month${S.atm?" at "+esc(atmName(S.atm)):" across the ATMs shown"}. Above the dashed line, a can costs more than it earns. Click a bar to explore it in the Cost explorer.</p></div>
+  <div class="box"><h2>Each ATM in the period · click a heading to sort, a name to filter</h2><div class="scroll"><table id="moneyT"><thead><tr>${cols.map(([c,l])=>`<th data-k="${c}" class="${c==="atm"?"l":""}">${l}${sk===c?(sd>0?" ▲":" ▼"):""}</th>`).join("")}</tr></thead>
+    <tbody>${atms.map(a=>`<tr class="${a.sur<0?"loss":""}">${cols.map(([c])=>cell(a,c)).join("")}</tr>`).join("")}</tbody></table></div>
+    <p class="note">Red edge: the ATM made a loss over the period. Litres a day = cans × 20 ÷ days in the months entered.</p></div>`;
 }
-function atmTable(){
-  const rows=PM.filter(r=>r.month>=st.from&&r.month<=st.to);const by={};
-  rows.forEach(r=>{const o=by[r.atm]||(by[r.atm]={atm:r.atm,months:0,cans:0,revenue:0,costs:0,surplus:0,loss:0,op:0});if(isOpen(r))o.months++;o.cans+=r.cans;o.revenue+=r.revenue;o.costs+=r.costs;o.surplus+=r.surplus;o.op+=r.op;if(isOpen(r)&&r.surplus<0)o.loss++});
-  const last=rangeMonths().slice(-1)[0];
-  return Object.values(by).map(o=>Object.assign(o,{cpc:o.cans?o.costs/o.cans:0,flags:(byAM[o.atm+'|'+last]?flagsOf(byAM[o.atm+'|'+last]):[]).length}));
+
+/* ---------- cost explorer ---------- */
+const LINES={all:{label:"All running costs",f:x=>x.cost,c:"var(--cost)"},op:{label:"Operator pay",f:x=>x.op,c:"var(--c-op)"},pow:{label:"Electricity",f:x=>x.pow,c:"var(--c-pow)"},rep:{label:"Repairs and consumables",f:x=>x.rep,c:"var(--c-rep)"},oth:{label:"Other costs",f:x=>x.oth,c:"var(--c-oth)"}};
+const MEAS={pc:{label:"₹ per can",v:(c,x)=>x.cans?c/x.cans:0,fmt:v=>"₹"+v.toFixed(2)},rs:{label:"₹ total",v:c=>c,fmt:v=>"₹"+k(v)},pr:{label:"% of revenue",v:(c,x)=>x.rev?c/x.rev*100:0,fmt:v=>Math.round(v)+"%"}};
+function vCosts(ms){
+  if(!ms.length)return '<div class="empty">No months in this period.</div>';
+  const L=LINES[S.cx.line],M=MEAS[S.cx.meas],bks=buckets(ms);
+  if(!bks.some(b=>b.key===S.cx.bucket))S.cx.bucket="";
+  const rows=rowsIn(ms),bm=byBucket(bks,rows),tot=agg(rows);
+  const val=x=>M.v(L.f(x),x);
+  const selB=bks.find(b=>b.key===S.cx.bucket);
+  const scopeMs=selB?selB.months:ms;
+  const per=byAtm(scopeMs,rowsIn(scopeMs,true)).map(a=>({atm:a.atm,v:M.v(L.f(a),{cans:a.cans,rev:a.rev})})).filter(a=>Number.isFinite(a.v)).sort((a,b)=>b.v-a.v);
+  const netA=agg(rowsIn(scopeMs,true));const netV=S.cx.meas==="rs"?(netA.n?L.f(netA)/netA.n:0):val(netA);
+  const first=bm.find(x=>x.cans),lastB=bm[bm.length-1];const ch=first&&lastB&&val(first)?(val(lastB)-val(first))/val(first)*100:null;
+  const share=tot.cost?L.f(tot)/tot.cost*100:0;
+  const seg=(act,obj,cur)=>`<div class="seg" role="group">${Object.keys(obj).map(x=>`<button type="button" data-act="${act}" data-v="${x}" aria-pressed="${x===cur}">${esc(obj[x].label)}</button>`).join("")}</div>`;
+  const tile=(kk,v,d,cls)=>`<div class="kpi ${cls||""}"><span class="k">${kk}</span><span class="v">${v}</span><span class="d">${d}</span></div>`;
+  // chart over time
+  const chart=S.cx.line==="all"
+    ?stackChart(bks,["op","pow","rep","oth"].map(l=>({label:LINES[l].label,color:LINES[l].c,values:bm.map(x=>M.v(LINES[l].f(x),x))})),{fmt:M.fmt,ref:S.cx.meas==="pc"?4:S.cx.meas==="pr"?100:0,refLabel:S.cx.meas==="pc"?"₹4 price":"Costs = revenue",act:"cxbucket",sel:S.cx.bucket,aria:"Running costs over time by cost line"})
+    :barsChart(bks,[{label:L.label,color:L.c,values:bm.map(val)}],{fmt:M.fmt,avg:bm.length>1?(S.cx.meas==="rs"?L.f(tot)/bm.length:val(tot)):null,avgLabel:S.cx.meas==="rs"?"Average":"Whole period",act:"cxbucket",sel:S.cx.bucket,aria:L.label+" over time"});
+  // biggest changes last vs previous bucket
+  let changes="";
+  if(bks.length>=2){const a=bks[bks.length-2],b=bks[bks.length-1];
+    const va=byAtm(a.months,rowsIn(a.months,true)),vb=byAtm(b.months,rowsIn(b.months,true));
+    const mp={};va.forEach(x=>mp[x.atm]=M.v(L.f(x),{cans:x.cans,rev:x.rev}));
+    const d=vb.filter(x=>mp[x.atm]!=null).map(x=>{const now=M.v(L.f(x),{cans:x.cans,rev:x.rev});return {atm:x.atm,was:mp[x.atm],now,d:now-mp[x.atm]}}).sort((p,q)=>q.d-p.d);
+    const tbl=(list,cls)=>list.length?`<table><thead><tr><th>ATM</th><th>${esc(a.title)}</th><th>${esc(b.title)}</th><th>Change</th></tr></thead><tbody>${list.map(x=>`<tr><td>${atmLink(x.atm)}</td><td>${M.fmt(x.was)}</td><td>${M.fmt(x.now)}</td><td class="${cls}">${x.d>0?"+":"−"}${M.fmt(Math.abs(x.d)).replace("−","")}</td></tr>`).join("")}</tbody></table>`:'<div class="empty">None.</div>';
+    changes=`<div class="grid2e"><div class="box"><h2>Biggest increases · ${esc(L.label)}</h2><div class="scroll">${tbl(d.filter(x=>x.d>0).slice(0,6),"neg")}</div></div><div class="box"><h2>Biggest decreases · ${esc(L.label)}</h2><div class="scroll">${tbl(d.filter(x=>x.d<0).reverse().slice(0,6),"pos")}</div></div></div>`;}
+  // heat map ATM × period
+  const hb=bks.slice(-12),ids=[...new Set(rowsIn(ms,true).map(r=>r.atm))].sort((p,q)=>p.localeCompare(q));
+  const cellV={};let hmax=0;ids.forEach(id=>hb.forEach(b=>{const rs=S.monthly.filter(r=>r.atm===id&&b.months.includes(r.month));if(!rs.length)return;const v=val(agg(rs));cellV[id+"|"+b.key]=v;if(v>hmax)hmax=v}));
+  const heat=`<table class="heat"><thead><tr><th class="l">ATM</th>${hb.map(b=>`<th>${esc(b.label)}</th>`).join("")}</tr></thead><tbody>${ids.map(id=>`<tr class="${id===S.atm?"sel":""}"><td class="n">${atmLink(id)}</td>${hb.map(b=>{const v=cellV[id+"|"+b.key];if(v==null)return `<td><span class="note">–</span></td>`;const p=hmax?Math.round(v/hmax*85):0;
+      return `<td><button type="button" data-act="cell" data-v="${esc(id)}" data-b="${esc(b.key)}" class="${id===S.atm&&b.key===S.cx.bucket?"sel":""}" style="background:color-mix(in srgb,${L.c} ${p}%,var(--surface));color:${p>55?"#fff":"var(--ink)"}" title="${esc(id+" · "+b.title+": "+M.fmt(v))}">${M.fmt(v)}</button></td>`}).join("")}</tr>`).join("")}</tbody></table>`;
+  return `<div class="box"><div class="row start">${seg("cxline",LINES,S.cx.line)}${seg("cxmeas",MEAS,S.cx.meas)}</div>
+    <p class="note">Pick a cost line and a measure. Click a month to rank the ATMs for that month; click an ATM to follow it over time; click a cell in the heat map to do both.</p></div>
+  <div class="kpis">
+    ${tile(L.label,lakh(L.f(tot)),"total in "+ms.length+" month"+(ms.length>1?"s":"")+(S.atm?" · "+esc(S.atm):""))}
+    ${tile("Per can",tot.cans?"₹"+(L.f(tot)/tot.cans).toFixed(2):"–","of the ₹4 price")}
+    ${tile("% of revenue",tot.rev?Math.round(L.f(tot)/tot.rev*100)+"%":"–","cost ÷ revenue",tot.rev&&L.f(tot)>tot.rev?"bad":"")}
+    ${S.cx.line==="all"?tile("Largest cost line",(()=>{const b=["op","pow","rep","oth"].sort((p,q)=>LINES[q].f(tot)-LINES[p].f(tot))[0];return LINES[b].label.split(" ")[0]})(),"share of running costs"):tile("Share of costs",Math.round(share)+"%","of all running costs")}
+    ${tile("Change",ch==null?"–":(ch>0?"+":"")+Math.round(ch)+"%",first&&lastB?M.label+", "+bks[bm.indexOf(first)].title+" → "+bks[bks.length-1].title:"",ch>5?"bad":ch<-5?"good":"")}
+  </div>
+  <div class="box"><div class="row"><h2>${esc(L.label)} · ${esc(M.label)} over time${S.atm?" · "+esc(S.atm):""}</h2>${S.cx.line==="all"?legend(["op","pow","rep","oth"].map(l=>[LINES[l].c,LINES[l].label])):""}</div>${chart}
+    ${S.cx.bucket?`<p class="note">Selected: <b>${esc(selB.title)}</b> · <button type="button" class="btn ghost" data-act="cxbucket" data-v="">Show whole period</button></p>`:""}</div>
+  <div class="grid2"><div class="box"><div class="row"><h2>ATMs ranked · ${esc(M.label)} · ${esc(selB?selB.title:"whole period")}</h2><span class="note">${S.cx.meas==="rs"?"Average ATM":"Network"}: ${M.fmt(netV)}</span></div>
+    <div class="hb">${per.map(a=>{const mx=per[0]?per[0].v:1;return `<button type="button" data-act="atm" data-v="${esc(a.atm)}" class="${a.atm===S.atm?"sel":""}"><span>${esc(a.atm)}</span><span class="t"><i style="width:${mx>0?Math.max(1,a.v/mx*100):0}%;background:${a.v>netV*1.25?"var(--bad)":L.c}"></i></span><span class="v">${M.fmt(a.v)}</span></button>`}).join("")}</div>
+    <p class="note">Red bar: more than 25% above the ${S.cx.meas==="rs"?"average ATM":"network figure"}. Click an ATM to follow it over time (click again to clear).</p></div>
+   <div class="box"><h2>Where the money goes${S.atm?" · "+esc(S.atm):""}</h2>${costMix(tot)}</div></div>
+  ${changes}
+  <div class="box"><div class="row"><h2>Heat map · ${esc(L.label)} · ${esc(M.label)}</h2><span class="note">${hb.length<bks.length?"Latest 12 periods":""} Darker = higher</span></div><div class="scroll">${heat}</div></div>`;
 }
-function vAtms(){
-  const T2=atmTable();const s=st.sort;T2.sort((a,b)=>(a[s.k]>b[s.k]?1:a[s.k]<b[s.k]?-1:0)*s.d);
-  const cols=[['atm','ATM',0],['months','Months open',1],['cans','Cans',1],['revenue','Revenue',1],['costs','Running costs',1],['surplus','Surplus',1],['cpc','Cost / can',1],['loss','Loss months',1],['flags','Flags (latest)',1]];
-  let h=`<div class="card"><h3>Results by ATM, ${mlab(st.from)} – ${mlab(st.to)}</h3><p class="what">Click a column to sort; click an ATM to see its trend.</p><div class="scroll"><table><thead><tr>${cols.map(c=>`<th class="${c[2]?'n':''}" data-k="${c[0]}">${c[1]}${s.k===c[0]?(s.d>0?' ▲':' ▼'):''}</th>`).join('')}</tr></thead><tbody>`;
-  T2.forEach(o=>{h+=`<tr class="click" data-atm="${esc(o.atm)}"><td><b>${esc(o.atm)}</b></td><td class="n">${o.months}</td><td class="n">${IN(o.cans)}</td><td class="n">${R(o.revenue)}</td><td class="n">${R(o.costs)}</td><td class="n ${o.surplus<0?'neg':'pos'}">${R(o.surplus)}</td><td class="n" style="color:${o.cpc>4?C.red:'inherit'}">${o.cans?'₹'+o.cpc.toFixed(2):'–'}</td><td class="n">${o.loss}</td><td class="n">${o.flags?`<span class="flag">${o.flags}</span>`:'<span class="ok">0</span>'}</td></tr>`});
-  h+=`</tbody></table></div></div>`;
-  const sel=st.sel&&ATMS.includes(st.sel)?st.sel:(T2.length?T2.slice().sort((a,b)=>a.surplus-b.surplus)[0].atm:null);
-  if(sel){const ms=rangeMonths(),rs=ms.map(m=>byAM[sel+'|'+m]||null),lab=ms.map(mlab);
-    h+=`<div class="card"><h3>${esc(sel)}: month by month</h3><p class="what">Revenue and running costs (bars) and surplus (line). Gaps are months with no sales.</p>${leg([[C.blue2,'Revenue'],['#9CB4C8','Running costs'],[C.navy,'Surplus']])}
-    ${barsLine(lab,[{n:'Revenue',c:C.blue2,vals:rs.map(r=>r?r.revenue:null)},{n:'Running costs',c:'#9CB4C8',vals:rs.map(r=>r?r.costs:null)}],rs.map(r=>isOpen(r)?r.surplus:null),{aria:sel+' trend'})}
-    ${lineChart(lab,rs.map(r=>isOpen(r)?r.costs/r.cans:null),{ref:4,refLab:'₹4 price',h:200,aria:'cost per can'})}</div>`}
-  return h;
+function costMix(t){const parts=["op","pow","rep","oth"].map(l=>({l,v:LINES[l].f(t)}));const T=sum(parts,p=>p.v)||1;
+  return `<div style="display:flex;height:26px;border-radius:6px;overflow:hidden">${parts.map(p=>`<span title="${esc(LINES[p.l].label)}: ${inr(p.v)}" style="width:${p.v/T*100}%;background:${LINES[p.l].c}"></span>`).join("")}</div>
+  <table><tbody>${parts.map(p=>`<tr><td><button type="button" data-act="cxline" data-v="${p.l}" style="border:0;background:none;padding:0;font:inherit;color:inherit;cursor:pointer"><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${LINES[p.l].c};margin-right:6px"></i>${esc(LINES[p.l].label)}</button></td><td>${inr(p.v)}</td><td>${Math.round(p.v/T*100)}%</td><td>${t.cans?"₹"+(p.v/t.cans).toFixed(2)+"/can":""}</td></tr>`).join("")}</tbody></table><p class="note">Click a cost line to explore it.</p>`}
+
+function vCards(ms){
+  const rows=rowsIn(ms),bks=buckets(ms),bm=byBucket(bks,rows);const atms=byAtm(ms,rows).sort((a,b)=>b.newCards-a.newCards);
+  return `<div class="box"><h2>New cards issued each ${bks.length&&bks[0].months.length>1?"year":"month"}${S.atm?" · "+esc(atmName(S.atm)):""}</h2>
+    ${ms.length?barsChart(bks,[{label:"New cards",color:"var(--accent)",values:bm.map(x=>x.newCards)}],{fmt:v=>Math.round(v).toLocaleString("en-IN"),aria:"New cards issued each month",h:220}):""}</div>
+  <div class="box"><h2>Cards by ATM</h2><div class="scroll"><table><thead><tr><th>ATM</th><th>New cards in period</th><th>Cards registered (latest month)</th><th>Cans a month per card</th></tr></thead>
+    <tbody>${atms.map(a=>`<tr class="${a.sur<0?"loss":""}"><td>${atmLink(a.atm)}</td><td>${a.newCards.toLocaleString("en-IN")}</td><td>${a.lastCards!=null?a.lastCards.toLocaleString("en-IN"):"–"}</td><td>${a.cpcCard?a.cpcCard.toFixed(1):"–"}</td></tr>`).join("")}</tbody></table></div>
+    <p class="note">Cans a month per card = average cans sold a month ÷ cards registered at the latest month. A low figure means many cards are rarely used.</p></div>`;
 }
-function vFlags(){
-  const ms=rangeMonths().slice(-12),last=ms[ms.length-1];
-  const lastRows=PM.filter(r=>r.month===last&&isOpen(r)&&(!st.atm||r.atm===st.atm)).map(r=>({r,f:flagsOf(r)})).filter(x=>x.f.length).sort((a,b)=>b.f.length-a.f.length||a.r.surplus-b.r.surplus);
-  let h=`<div class="card"><h3>Flagged in ${mlab(last)}</h3><p class="what">Four automatic checks run every month: ${FLAGS.map(f=>f.t.toLowerCase()).join('; ')}.</p>`;
-  h+=lastRows.length?`<table><thead><tr><th>ATM</th><th class="n">Surplus</th><th class="n">Cost / can</th><th>Flags</th></tr></thead><tbody>${lastRows.map(x=>`<tr><td><b>${esc(x.r.atm)}</b></td><td class="n ${x.r.surplus<0?'neg':'pos'}">${R(x.r.surplus)}</td><td class="n">₹${(x.r.costs/x.r.cans).toFixed(2)}</td><td>${x.f.map(f=>`<span class="flag">${f.t}</span>`).join('')}</td></tr>`).join('')}</tbody></table>`:'<p class="ok">No flags this month.</p>';
-  h+=`</div>`;
-  const atms=(st.atm?[st.atm]:ATMS);
-  h+=`<div class="card"><h3>Flag history, last ${ms.length} months</h3><p class="what">Number of flags per ATM per month. Darker red = more checks failed; grey = not open.</p><div class="scroll"><table><thead><tr><th>ATM</th>${ms.map(m=>`<th class="n">${mlab(m)}</th>`).join('')}</tr></thead><tbody>`;
-  atms.forEach(a=>{h+=`<tr><td>${esc(a)}</td>${ms.map(m=>{const r=byAM[a+'|'+m];if(!isOpen(r))return'<td class="n" style="background:#F1F4F7;color:#9CB4C8">·</td>';const n=flagsOf(r).length;const bg=['#EEF6EE','#F8D9D9','#EFA9A9','#D86A6A','#B83A3A'][n];return`<td class="n" style="background:${bg};color:${n>2?'#fff':'#0B3D66'};font-weight:700" title="${esc(flagsOf(r).map(f=>f.t).join('; '))}">${n||''}</td>`}).join('')}</tr>`});
-  return h+`</tbody></table></div></div>`;
+const atmOpts=sel=>Object.keys(S.atms).sort((a,b)=>a.localeCompare(b)).map(id=>`<option value="${esc(id)}"${id===sel?" selected":""}>${esc(id)}</option>`).join("");
+function vRepairs(ms){
+  const rs=S.repairs.filter(r=>ms.includes((r.date||"").slice(0,7))&&(!S.atm||r.atm===S.atm)).sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  const rows=rowsIn(ms),bks=buckets(ms),bm=byBucket(bks,rows);
+  return `<div class="grid2"><div class="box"><h2>Repairs and consumables per can</h2>
+    ${ms.length?barsChart(bks,[{label:"Repairs per can",color:"var(--c-rep)",values:bm.map(x=>x.cans?x.rep/x.cans:0)}],{fmt:v=>"₹"+v.toFixed(2),aria:"Repairs cost per can each month",h:220}):""}</div>
+   <div class="box"><h2>Log a repair</h2>
+    <form class="f" id="repForm">
+      <label>ATM<select id="rAtm" required>${atmOpts(S.atm)}</select></label>
+      <label>Date<input id="rDate" type="date" required></label>
+      <label>What was repaired<input id="rItem" required placeholder="e.g. high-pressure pump"></label>
+      <label>Cost (₹)<input id="rCost" type="number" min="0" step="1" required></label>
+      <label>Days ATM was shut<input id="rDown" type="number" min="0" step="1" value="0"></label>
+      <label>Fixed by<input id="rBy" placeholder="e.g. Mr. Narendra"></label>
+      <label class="wide">Notes<textarea id="rNote" placeholder="Cause, parts used"></textarea></label>
+      <div class="wide row"><p class="status" id="rStatus" role="status"></p><button class="btn" type="submit">Save repair</button></div>
+    </form></div></div>
+  <div class="box"><h2>Repair log · newest first</h2>${rs.length?`<div class="scroll"><table><thead><tr><th>Date</th><th class="l">ATM</th><th class="l">What was repaired</th><th>Cost</th><th>Days shut</th><th class="l">Source</th></tr></thead><tbody>${rs.map(r=>`<tr><td>${esc(r.source==="Monthly sheet"?mLabel(r.date.slice(0,7)):r.date)}</td><td class="l">${atmLink(r.atm)}</td><td class="l">${esc(r.item)}</td><td>${inr(r.cost)}</td><td>${r.daysDown==null||r.daysDown===""?"–":esc(r.daysDown)}</td><td class="l"><span class="chip ${r.source==="Monthly sheet"?"info":"good"}">${esc(r.source||"Logged")}</span></td></tr>`).join("")}</tbody></table></div>`:'<div class="empty">No repairs logged for this period. Use the form above to add the first one.</div>'}
+   <p class="note">"Monthly sheet" rows come from the repairs line and the "Detail" note of Dhara Sansthan's monthly statement, read automatically on upload. Repairs logged here add the date, part and days shut, which the sheet does not record.</p></div>`;
 }
-function vData(){
-  const q=(st.q||'').toLowerCase();const rows=RAW.filter(r=>{const m=r.period.slice(0,7);return m>=st.from&&m<=st.to&&(!st.atm||r.atm===st.atm)&&(!q||r.atm.toLowerCase().includes(q))}).sort((a,b)=>a.period<b.period?1:a.period>b.period?-1:a.atm.localeCompare(b.atm));
-  let h=`<div class="card"><div class="row" style="margin-bottom:8px"><h3 style="flex:1">Stored data, ${mlab(st.from)} – ${mlab(st.to)} (${rows.length} rows)</h3><input id="q" type="search" placeholder="Search ATM" value="${esc(st.q||'')}"><button class="btn ghost" onclick="downloadCSV()">⬇ Download CSV</button></div>
-  <div class="scroll"><table><thead><tr>${HEAD.map((x,i)=>`<th class="${i>1?'n':''}">${x}</th>`).join('')}<th class="n">Surplus</th></tr></thead><tbody>`;
-  rows.slice(0,2000).forEach(r=>{const s=r.revenue-costOf(r);h+=`<tr><td>${esc(r.atm)}</td><td>${r.period}</td>${[r.cans,r.revenue,r.op,r.elec,r.rep,r.other].map(v=>`<td class="n">${IN(v)}</td>`).join('')}<td class="n ${s<0?'neg':'pos'}">${IN(s)}</td></tr>`});
-  return h+`</tbody></table></div>${rows.length>2000?'<p class="note">Showing the latest 2,000 rows; download the CSV for all.</p>':''}</div>`;
+function vHealth(ms){
+  const end=ms[ms.length-1]||"";const cs=S.checks.filter(c=>(!S.atm||c.atm===S.atm)&&(!ms.length||c.month>=ms[0])).sort((a,b)=>b.month.localeCompare(a.month)||a.atm.localeCompare(b.atm));
+  const yn=(id,l)=>`<fieldset class="yl"><legend>${l}</legend><span class="yn"><label><input type="radio" name="${id}" value="yes" checked> Yes</label><label><input type="radio" name="${id}" value="no"> No</label></span></fieldset>`;
+  const now=new Date();const curM=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
+  return `<div class="box"><h2>Monthly ATM checklist</h2><p class="note">Filled in by the operator once a month; checked by the maintenance in-charge on visits. Every "No" and any reading outside the limits raises a flag.</p>
+    <form class="f" id="chkForm">
+      <label>ATM<select id="cAtm" required>${atmOpts(S.atm)}</select></label>
+      <label>Month<input id="cMonth" type="month" required value="${curM}"></label>
+      <label>TDS of treated water (mg/L)<input id="cTds" type="number" min="0" step="1" placeholder="e.g. 150"></label>
+      <label>pH of treated water<input id="cPh" type="number" min="0" max="14" step="0.01" placeholder="e.g. 7.2"></label>
+      ${CHK_ITEMS.map(([id,,l])=>yn(id,l)).join("")}
+      <label>Days the ATM was shut<input id="cDown" type="number" min="0" step="1" value="0"></label>
+      <label>Electricity meter reading<input id="cMeter" type="number" min="0" step="1"></label>
+      <label>Filled in by<input id="cBy" placeholder="Operator name"></label>
+      <label class="wide">Notes<textarea id="cNote" placeholder="Anything that needs attention"></textarea></label>
+      <div class="wide row"><p class="status" id="cStatus" role="status"></p><button class="btn" type="submit">Save checklist</button></div>
+    </form></div>
+  <div class="box"><h2>Checklists submitted in period</h2>${cs.length?`<div class="scroll"><table><thead><tr><th>Month</th><th class="l">ATM</th><th>TDS</th><th>pH</th><th>Days shut</th><th class="l">Result</th><th class="l">By</th></tr></thead><tbody>${cs.map(c=>{const hf=healthFlags(c.atm,c.month);const own=hf.last===c?hf.flags.filter(f=>!/repairs in 3/.test(f[0])):[];return `<tr><td>${esc(mLabel(c.month))}</td><td class="l">${atmLink(c.atm)}</td><td>${esc(c.tds||"–")}</td><td>${esc(c.ph||"–")}</td><td>${esc(c.downtimeDays||0)}</td><td class="l">${own.length?own.map(f=>`<span class="chip ${f[1]}">${esc(f[0])}</span>`).join(""):'<span class="chip good">All OK</span>'}</td><td class="l">${esc(c.filledBy||"")}</td></tr>`}).join("")}</tbody></table></div>`:`<div class="empty">No checklists yet for ${ms.length?esc(mLabel(ms[0]))+(ms.length>1?" – "+esc(mLabel(end)):""):"this period"}. The checklist is new, so the first entries will start from the month it is introduced.</div>`}</div>`;
 }
+function vFlags(ms){
+  const end=ms[ms.length-1];if(!end) return '<div class="empty">No data in this period.</div>';
+  const ids=Object.keys(S.atms).filter(id=>!S.atm||id===S.atm);
+  const list=ids.map(id=>{const mf=moneyFlags(id,end)||[];const hf=healthFlags(id).flags;return {id,mf,hf,n:mf.length+hf.length}}).filter(x=>S.monthly.some(r=>r.atm===x.id&&r.month===end)||x.hf.length).sort((a,b)=>b.n-a.n||a.id.localeCompare(b.id));
+  const red=list.filter(x=>x.mf.length>=2||x.hf.some(f=>f[1]==="bad"));
+  return `<div class="box"><h2>Flags for ${esc(mLabel(end))}</h2><p class="note">Money flags come from the monthly figures: cost per can above ₹4, a loss two months running, operator pay over half of revenue, and sales 25% or more below the ATM's first two months. Health flags come from the latest checklist and the repair log. An ATM with 2 or more money flags, or any red health flag, needs a visit.</p>
+   <div class="kpis"><div class="kpi ${red.length?"bad":"good"}"><span class="k">Need a visit</span><span class="v">${red.length}</span><span class="d">of ${list.length} ATMs with data</span></div><div class="kpi"><span class="k">Any flag</span><span class="v">${list.filter(x=>x.n).length}</span><span class="d">ATMs with at least one flag</span></div></div>
+   <div class="scroll"><table><thead><tr><th class="l">ATM</th><th class="l">Money flags</th><th class="l">Health and repair flags</th></tr></thead><tbody>
+   ${list.map(x=>`<tr class="${red.includes(x)?"loss":""}"><td class="l"><b>${atmLink(x.id)}</b></td><td class="l">${x.mf.length?x.mf.map(f=>`<span class="chip ${f[1]}">${esc(f[0])}</span>`).join(""):'<span class="chip good">None</span>'}</td><td class="l">${x.hf.length?x.hf.map(f=>`<span class="chip ${f[1]}">${esc(f[0])}</span>`).join(""):'<span class="chip info">No checklist or none raised</span>'}</td></tr>`).join("")}
+   </tbody></table></div></div>`;
+}
+
+/* ---------- add data: upload with steps, plus single-ATM form ---------- */
+function vAdd(){
+  const ms=allMonths();const next=ms.length?addMonths(ms[ms.length-1],1):"";
+  const f=(id,l,ph)=>`<label>${l}<input id="${id}" type="number" min="0" step="1" ${ph?`placeholder="${ph}"`:""}></label>`;
+  const conn=!!api();
+  return `<div class="box"><h2>Upload the monthly Excel · 5 simple steps</h2>
+   <ol class="steps">
+    <li><b class="n">1</b><b>Get the file</b><span>Dhara Sansthan's monthly <i>Statement of Receipts &amp; Payments</i> (.xlsx). Upload it exactly as it is. One sheet per month is fine, and a whole year in one file works too.</span></li>
+    <li><b class="n">2</b><b>Check it has the must-haves</b><span>A column of ATM / plant names, cans sold, revenue, and the month (in the title, e.g. "April 2026", the sheet name, or a column). Costs, connections and the Detail note are read too if present.</span></li>
+    <li><b class="n">3</b><b>Drop the file below</b><span>The dashboard reads every sheet and matches the columns by their names. Nothing is saved at this step.</span></li>
+    <li><b class="n">4</b><b>Check the preview</b><span>See which column fed which figure, the totals, and the cost check against the sheet's own "Total". Fix a wrong column with its drop-down, or ask AI.</span></li>
+    <li><b class="n">5</b><b>Save to the master data</b><span>Click <i>Save to Google Sheet</i> (passcode the first time). The same ATM and month replaces the old figures, so a corrected file can be uploaded again.</span></li>
+   </ol>
+   ${conn?"":`<div class="msg warn">Not connected to the Google Sheet yet, so uploads show in this view only. To save permanently, connect it in <button type="button" class="btn ghost" data-go="master">Master data</button> (one-time set-up).</div>`}
+   <div class="drop" id="drop" tabindex="0" role="button">⬆ Drop an Excel (.xlsx, .xls) or CSV file here, or click to choose<input id="file" type="file" accept=".xlsx,.xls,.csv" class="hide"></div>
+   <div id="upmsg"></div><div id="preview"></div><div class="row" id="upbtns" style="justify-content:flex-end"></div>
+  </div>
+  <div class="grid2e">
+   <div class="box"><h2>What is taken from the monthly statement</h2><div class="scroll"><table><thead><tr><th class="l">Column in the statement</th><th class="l">Becomes</th></tr></thead><tbody>
+    ${[["Name of the Plant","ATM"],["Sheet title (e.g. “April 2026”)","Month"],["No. of Cans (Water sold)","Cans sold"],["Revenu Total","Revenue"],["Operator Salary","Operator pay"],["Electricity charges","Electricity"],["Micro Filters, Repairs & Maint.","Repairs and consumables"],["Water charges, Misc. Exp, Misc. Items, Tank Cleaning, Others","Other costs (added up)"],["New Connect","New cards"],["Total Connection in the reporting month","Cards registered"],["Detail","Repair log note"],["PAYMENTS › Total","Cost check only"]].map(([a,b])=>`<tr><td class="l">${esc(a)}</td><td class="l"><b>${esc(b)}</b></td></tr>`).join("")}
+    </tbody></table></div><p class="note">Rows called “Others”, “Total” or “Summary” are skipped. Other layouts (one row per ATM) work too; weekly rows are added up into months.</p>
+    <div class="row start"><button type="button" class="btn ghost" id="tplBtn">⬇ Simple template (optional)</button></div></div>
+   <div class="box"><h2>If something looks wrong</h2><ul class="note" style="padding-left:18px;margin:0;display:flex;flex-direction:column;gap:4px">
+    <li><b>“No month found”</b>: pick the month in the box that appears.</li>
+    <li><b>New ATM name</b>: a spelling different from before makes a new ATM. Correct the name in the file and upload again.</li>
+    <li><b>Cost check fails</b>: a cost column is matched wrongly. Open <i>Column matching</i> and change it.</li>
+    <li><b>Unfamiliar layout</b>: use <i>Ask AI to map the columns</i>, or set each column by hand. The choice is remembered.</li>
+    <li><b>Wrong figures saved</b>: fix the file and upload it again; it replaces the old rows.</li></ul></div>
+  </div>
+  <div class="box"><h2>Or type one ATM's figures</h2><p class="note">For a quick correction. Saving a month that already exists replaces it.</p>
+   <form class="f" id="addForm">
+     <label>ATM<select id="aAtm" required>${atmOpts(S.atm)}</select></label>
+     <label>Month<input id="aMonth" type="month" required value="${next}"></label>
+     ${f("aCans","Cans sold (20 L)")}${f("aRev","Revenue (₹)")}${f("aNew","New cards issued")}${f("aTot","Cards registered at month end")}
+     ${f("aOp","Operator pay (₹)")}${f("aPow","Electricity (₹)")}${f("aRep","Repairs and consumables (₹)")}${f("aOth","Other costs (₹)","water, housekeeping, misc")}
+     <div class="wide row"><p class="status" id="aStatus" role="status"></p><button class="btn" type="submit">Save month</button></div>
+   </form></div>
+  <div class="box"><h2>Add a new ATM</h2>
+   <form class="f" id="atmForm"><label>ATM name<input id="nName" required></label><label>Status<select id="nStatus"><option>New site</option><option>Profit-making</option><option>Loss-making</option><option>Closed</option></select></label>
+   <div class="row"><p class="status" id="nStatus2" role="status"></p><button class="btn ghost" type="submit">Add ATM</button></div></form></div>`;
+}
+
+/* ---------- master data ---------- */
+function vMaster(ms){
+  const q=S.dq.toLowerCase();const rs=S.monthly.filter(r=>ms.includes(r.month)&&(!S.atm||r.atm===S.atm)&&(!q||r.atm.toLowerCase().includes(q))).sort((a,b)=>b.month.localeCompare(a.month)||a.atm.localeCompare(b.atm));
+  const live=S.src==="live";
+  return `<div class="grid2e"><div class="box"><h2>Master data</h2>
+    <p>All figures live in one Google Sheet with four tabs: <b>Data</b> (one row per ATM per month or week), <b>Repairs</b>, <b>Checks</b> and <b>ATMs</b>. Every upload and form on this dashboard writes there, and the dashboard reads it each time it opens. Nothing is deleted when new data comes in, so the history grows year by year.</p>
+    <div class="row start"><a class="btn" href="${MASTER_URL}" target="_blank" rel="noopener">Open the master Google Sheet ↗</a><button type="button" class="btn ghost" id="csvBtn">⬇ Download shown rows (CSV)</button></div>
+    <p class="note">The sheet opens for people it is shared with. Now showing: <b>${live?"live data from the Google Sheet"+(S.updated?" · loaded "+esc(new Date(S.updated).toLocaleString("en-IN")):""):"bundled data, April–September 2026 (not yet connected)"}</b>. ${allMonths().length} months, ${Object.keys(S.atms).length} ATMs, ${S.monthly.length} ATM-months.</p></div>
+   <div class="box"><h2>Connection (one-time set-up)</h2>
+    <p class="note">Paste the web-app address from the sheet's Apps Script (see SETUP.md) and the upload passcode. Both are kept in this browser only.</p>
+    <form class="f" id="setForm"><label class="wide">Apps Script URL<input id="apiUrl" type="text" placeholder="https://script.google.com/macros/s/…/exec" value="${esc(api())}"></label>
+     <label class="wide">Upload passcode<input id="pass" type="password" value="${esc(ls.get("atm_pass")||"")}"></label>
+     <div class="wide row"><p class="status" id="setStatus" role="status"></p><span><button type="button" class="btn ghost" id="disBtn">Disconnect</button> <button class="btn" type="submit">Save and load</button></span></div></form>
+    ${live?`<button type="button" class="btn ghost" id="seedBtn">Copy the bundled Apr–Sep 2026 history (cards, repair notes) into the Sheet</button>`:""}</div></div>
+  <div class="box"><div class="row"><h2>Rows in the period · ${rs.length}</h2><input id="dq" type="search" placeholder="Search ATM" value="${esc(S.dq)}"></div>
+   <div class="scroll" style="max-height:520px;overflow-y:auto"><table><thead><tr><th>ATM</th><th>Month</th><th>Cans</th><th>Revenue</th><th>Operator</th><th>Power</th><th>Repairs</th><th>Other</th><th>Surplus</th><th>New cards</th><th>Cards</th></tr></thead><tbody>
+   ${rs.slice(0,600).map(r=>{const s=num(r.revenue)-costOf(r);return `<tr><td>${atmLink(r.atm)}</td><td>${esc(r.month)}</td><td>${Math.round(r.cans).toLocaleString("en-IN")}</td><td>${inr(r.revenue)}</td><td>${inr(r.operatorPay)}</td><td>${inr(r.electricity)}</td><td>${inr(r.repairs)}</td><td>${inr(r.otherCosts)}</td><td class="${s<0?"neg":"pos"}">${inr(s)}</td><td>${num(r.newCards)}</td><td>${r.totalCards==null?"–":num(r.totalCards).toLocaleString("en-IN")}</td></tr>`}).join("")}
+   </tbody></table></div>${rs.length>600?'<p class="note">Showing the latest 600 rows; download the CSV for all.</p>':""}</div>`;
+}
+
+/* ---------- how to use ---------- */
+function vHelp(){
+  return `<div class="box howto"><h2>How to use the ATM Monitor</h2>
+   <p>The dashboard shows how each Community RO Water ATM is doing: what it earns, what it costs to run, how many cards it has, its repairs and its water checks. It is meant for a short monthly review by the Dhara Sansthan office.</p></div>
+  <div class="grid2e">
+   <div class="box howto"><h3>1. Choose what to look at</h3><ul>
+    <li><b>Period</b> (top bar): last month, 3, 6 or 12 months, all data, or a custom from–to range.</li>
+    <li><b>ATM</b>: pick one ATM, or click any ATM name in a table or chart. Choose “All ATMs” to go back.</li>
+    <li>With more than two years in view, charts add up the months into financial years (April–March).</li></ul></div>
+   <div class="box howto"><h3>2. The tabs</h3><ul>
+    <li><b>Overview</b>: revenue, running costs, surplus, cost per can, water delivered, best and worst ATMs.</li>
+    <li><b>Revenue and costs</b>: cost of one can by cost line, and a sortable table of every ATM.</li>
+    <li><b>Cost explorer</b>: follow one cost line over time and across ATMs (see 3).</li>
+    <li><b>Cards</b>: new cards issued and how often cards are used.</li>
+    <li><b>Repair log</b> and <b>Health checks</b>: record repairs and the monthly water and safety checklist.</li>
+    <li><b>Flags</b>: ATMs that need attention this month (see 4).</li>
+    <li><b>Add data</b>, <b>Master data</b>: upload new months; open the Google Sheet.</li></ul></div>
+   <div class="box howto"><h3>3. Using the Cost explorer</h3><ol>
+    <li>Pick a <b>cost line</b>: all running costs, operator pay, electricity, repairs and consumables, or other costs.</li>
+    <li>Pick a <b>measure</b>: ₹ per can (best for comparing ATMs of different size), ₹ total, or % of revenue.</li>
+    <li><b>Click a month</b> in the chart to rank the ATMs for that month; click it again via “Show whole period” to reset.</li>
+    <li><b>Click an ATM</b> in the ranking to see its trend; the heat map shows every ATM month by month.</li>
+    <li>“Biggest increases” lists the ATMs whose cost rose most from the previous month: start the review there.</li></ol></div>
+   <div class="box howto"><h3>4. Reading the flags</h3><ul>
+    <li><span class="chip bad">Cost per can above ₹4</span> the ATM spends more on a can than it earns.</li>
+    <li><span class="chip bad">Loss two months running</span> needs a visit.</li>
+    <li><span class="chip warn">Operator pay over half of revenue</span> sales too low for the pay.</li>
+    <li><span class="chip warn">Sales 25%+ below its first two months</span> users drifting away.</li>
+    <li>Health flags come from the checklist: TDS above 500, pH outside 6.5–8.5, any “No”, 3+ days shut.</li></ul></div>
+   <div class="box howto"><h3>5. Adding a new month</h3><ol>
+    <li>Open <b>Add data</b> and drop the monthly statement Excel, as it is.</li>
+    <li>Check the preview and the cost check.</li>
+    <li>Click <b>Save to Google Sheet</b>. The dashboard reloads with the new month.</li></ol>
+    <p class="note">Repairs and checklists are saved from their own tabs. A mistake is fixed by saving the same ATM and month again.</p></div>
+   <div class="box howto"><h3>6. A monthly review in 10 minutes</h3><ol>
+    <li>Upload the new month.</li><li>Flags: list the ATMs that need a visit.</li>
+    <li>Cost explorer: check “Biggest increases” for each cost line.</li>
+    <li>Repair log: confirm the visits and log what was fixed.</li></ol></div>
+  </div>`;
+}
+
+/* ---------- render ---------- */
 function render(){
-  idx();const v=document.getElementById('view');
-  v.innerHTML=st.tab==='ov'?vOverview():st.tab==='atms'?vAtms():st.tab==='flags'?vFlags():vData();
-  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.t===st.tab));
-  v.querySelectorAll('th[data-k]').forEach(th=>th.onclick=()=>{const k=th.dataset.k;st.sort=st.sort.k===k?{k,d:-st.sort.d}:{k,d:k==='atm'?1:-1};render()});
-  v.querySelectorAll('tr[data-atm]').forEach(tr=>tr.onclick=()=>{st.sel=tr.dataset.atm;render();window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'})});
-  const q=document.getElementById('q');if(q)q.oninput=()=>{st.q=q.value;const p=q.selectionStart;render();const q2=document.getElementById('q');q2.focus();q2.setSelectionRange(p,p)};
+  const main=$("#main");
+  const views={overview:vOverview,money:vMoney,costs:vCosts,cards:vCards,repairs:vRepairs,health:vHealth,flags:vFlags,add:vAdd,master:vMaster,help:vHelp};
+  if(!views[S.tab])S.tab="overview";
+  const ms=periodMonths();syncControls(ms);
+  if(!S.monthly.length&&!["add","master","help"].includes(S.tab)){main.innerHTML='<div class="empty">No monthly figures yet. Open "Add data" to upload the first month.</div>';return}
+  const keep=document.activeElement&&document.activeElement.closest&&document.activeElement.closest("form");
+  if(keep&&main.contains(keep)&&S.tab!=="add") return; // don't wipe a form someone is typing in
+  main.innerHTML=`<section class="panel" role="tabpanel">${views[S.tab](ms)}</section>`;
+  wire();
+  if(S.tab==="add"&&S.imp)renderImport();
+}
+function syncControls(ms){
+  document.querySelectorAll("#period button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.p===S.period)));
+  document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.t===S.tab)));
+  $("#customBox").hidden=S.period!=="custom";
+  const all=allMonths();const o=all.map(m=>`<option value="${m}">${mLabel(m)}</option>`).join("");
+  for(const [id,val] of [["#fromM",S.from||all[0]],["#toM",S.to||all[all.length-1]]]){const el=$(id);if(el.dataset.sig!==all.join()){el.innerHTML=o;el.dataset.sig=all.join()}if(val)el.value=val}
+  const sel=$("#atmSel");const ids=Object.keys(S.atms).sort((a,b)=>a.localeCompare(b));
+  if(sel.dataset.sig!==ids.join()){sel.innerHTML='<option value="">All ATMs</option>'+ids.map(id=>`<option value="${esc(id)}">${esc(id)}</option>`).join("");sel.dataset.sig=ids.join()}
+  sel.value=S.atm;
+  $("#periodLabel").textContent=ms.length?(ms.length===1?mLabel(ms[0]):mLabel(ms[0])+" – "+mLabel(ms[ms.length-1])):"";
+  const end=ms[ms.length-1];const fc=$("#flagCount");if(end){const n=Object.keys(S.atms).filter(id=>{const mf=moneyFlags(id,end)||[];return mf.length>=2||healthFlags(id).flags.some(f=>f[1]==="bad")}).length;fc.hidden=!n;fc.textContent=n}else fc.hidden=true;
+  const b=$("#srcBadge");if(S.src==="live"){b.className="proto live";b.textContent="Live · Google Sheet · "+(all.length?mLabel(all[0])+" – "+mLabel(all[all.length-1]):"no data yet")}
+  else{b.className="proto";b.textContent=S.src==="local"?"Unsaved uploads shown · not connected to the Sheet":"Prototype · seeded with April–September 2026 data"}
+}
+function setStatus(id,msg,ok){const el=$(id);if(el){el.textContent=msg;el.className="status "+(ok?"ok":"err")}}
+
+/* ---------- saving: Google Sheet when connected, else this view only ---------- */
+function toSheetRow(tab,o){return o}
+async function post(body){const pass=ls.get("atm_pass")||prompt("Upload passcode (set in the Apps Script)");if(!pass)throw new Error("No passcode");
+  const res=await fetch(api(),{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({...body,passcode:pass})});
+  const j=await res.json();if(!j.ok){if(/passcode/i.test(j.error||""))ls.del("atm_pass");throw new Error(j.error||"save failed")}ls.set("atm_pass",pass);return j}
+async function persist(tab,rows,applyLocal,statusId,okMsg,form){
+  try{
+    if(api()){setStatus(statusId,"Saving to the Google Sheet…",true);await post({tab,rows});await loadLive();setStatus(statusId,okMsg+" Saved to the Google Sheet.",true)}
+    else{applyLocal();S.src="local";setStatus(statusId,okMsg+" Shown in this view only: connect the Google Sheet in Master data to keep it.",true)}
+    if(form){form.reset();document.activeElement&&document.activeElement.blur()}
+    const st=$(statusId)?$(statusId).textContent:"";render();setStatus(statusId,st,true);
+  }catch(e){setStatus(statusId,"Could not save: "+e.message+". Nothing was changed.",false)}
+}
+const dataObj=r=>({"ATM":r.atm,"Period":r.period,"Cans":r.cans,"Revenue":r.revenue,"Operator pay":r.operatorPay,"Electricity":r.electricity,"Repairs and consumables":r.repairs,"Other costs":r.otherCosts,"New cards":r.newCards==null?"":r.newCards,"Cards registered":r.totalCards==null?"":r.totalCards,"Source":r.source||"Upload"});
+const repObj=r=>({"ATM":r.atm,"Date":r.date,"What was repaired":r.item,"Cost":r.cost,"Days shut":r.daysDown==null?"":r.daysDown,"Fixed by":r.fixedBy||"","Notes":r.notes||"","Source":r.source||"Logged"});
+function mergeRaw(rows){const m={};S.raw.forEach(r=>m[r.atm+"|"+r.period]=r);rows.forEach(r=>m[r.atm+"|"+r.period]=r);S.raw=Object.values(m);rebuild()}
+function mergeRep(rows){const key=r=>r.atm+"|"+r.date+"|"+r.item;const m={};S.repairs.forEach(r=>m[key(r)]=r);rows.forEach(r=>m[key(r)]=r);S.repairs=Object.values(m)}
+
+function wire(){
+  const mt=$("#moneyT");if(mt)mt.querySelectorAll("th[data-k]").forEach(th=>th.onclick=()=>{const c=th.dataset.k;const [sk,sd]=S.sort.money;S.sort.money=[c,sk===c?-sd:(c==="atm"?1:-1)];render()});
+  const rf=$("#repForm");if(rf){$("#rDate").value=new Date().toISOString().slice(0,10);rf.onsubmit=e=>{e.preventDefault();
+    const r={atm:$("#rAtm").value,date:$("#rDate").value,item:$("#rItem").value.trim().slice(0,200),cost:num($("#rCost").value),daysDown:num($("#rDown").value),fixedBy:$("#rBy").value.trim().slice(0,80),notes:$("#rNote").value.trim().slice(0,500),source:"Logged"};
+    persist("Repairs",[repObj(r)],()=>mergeRep([r]),"#rStatus","Repair saved.",rf)}}
+  const cf=$("#chkForm");if(cf)cf.onsubmit=e=>{e.preventDefault();const atm=$("#cAtm").value,month=$("#cMonth").value;if(!month)return;
+    const b={atm,month,tds:$("#cTds").value,ph:$("#cPh").value,downtimeDays:num($("#cDown").value),meter:$("#cMeter").value,filledBy:$("#cBy").value.trim().slice(0,80),notes:$("#cNote").value.trim().slice(0,500)};
+    CHK_ITEMS.forEach(([n])=>{const r=cf.querySelector(`input[name="${n}"]:checked`);b[n]=r?r.value:"yes"});
+    const o={"ATM":atm,"Month":month,"TDS":b.tds,"pH":b.ph,"Days shut":b.downtimeDays,"Meter reading":b.meter,"Filled by":b.filledBy,"Notes":b.notes};CHK_ITEMS.forEach(([n,h])=>o[h]=b[n]);
+    persist("Checks",[o],()=>{S.checks=S.checks.filter(c=>!(c.atm===atm&&c.month===month)).concat([b])},"#cStatus","Checklist saved for "+atm+", "+mLabel(month)+".",cf)};
+  const af=$("#addForm");if(af)af.onsubmit=e=>{e.preventDefault();const atm=$("#aAtm").value,month=$("#aMonth").value;if(!month)return;
+    const r={atm,period:month,cans:num($("#aCans").value),revenue:num($("#aRev").value),newCards:num($("#aNew").value),totalCards:$("#aTot").value===""?null:num($("#aTot").value),operatorPay:num($("#aOp").value),electricity:num($("#aPow").value),repairs:num($("#aRep").value),otherCosts:num($("#aOth").value),source:"Entered"};
+    const exists=S.monthly.some(x=>x.atm===atm&&x.month===month);
+    persist("Data",[dataObj(r)],()=>mergeRaw([r]),"#aStatus",(exists?"Replaced ":"Saved ")+atm+", "+mLabel(month)+".",af)};
+  const nf=$("#atmForm");if(nf)nf.onsubmit=e=>{e.preventDefault();const name=$("#nName").value.trim().slice(0,80);if(!name)return;const status=$("#nStatus").value;
+    persist("ATMs",[{"ATM":name,"Status":status}],()=>{S.atms[name]={name,status}},"#nStatus2","Added "+name+".",nf)};
+  const drop=$("#drop"),fin=$("#file");
+  if(drop){drop.onclick=e=>{if(e.target!==fin)fin.click()};drop.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();fin.click()}};fin.onchange=()=>fin.files[0]&&readFile(fin.files[0]);
+    drop.ondragover=e=>{e.preventDefault();drop.classList.add("hot")};drop.ondragleave=()=>drop.classList.remove("hot");
+    drop.ondrop=e=>{e.preventDefault();drop.classList.remove("hot");e.dataTransfer.files[0]&&readFile(e.dataTransfer.files[0])};}
+  const tb=$("#tplBtn");if(tb)tb.onclick=downloadTemplate;
+  const cb=$("#csvBtn");if(cb)cb.onclick=downloadCSV;
+  const dq=$("#dq");if(dq)dq.oninput=()=>{S.dq=dq.value;const p=dq.selectionStart;render();const n=$("#dq");n.focus();n.setSelectionRange(p,p)};
+  const sf=$("#setForm");if(sf)sf.onsubmit=async e=>{e.preventDefault();const u=$("#apiUrl").value.trim(),p=$("#pass").value;
+    if(u&&!/^https:\/\/script\.google(usercontent)?\.com\//.test(u)){setStatus("#setStatus","That does not look like an Apps Script web-app address.",false);return}
+    u?ls.set("atm_api",u):ls.del("atm_api");p?ls.set("atm_pass",p):ls.del("atm_pass");
+    if(!u){useSeed();render();return}
+    setStatus("#setStatus","Connecting…",true);try{await loadLive();render();setStatus("#setStatus","Connected: "+S.monthly.length+" ATM-months loaded.",true)}catch(err){setStatus("#setStatus","Could not load data: "+err.message,false)}};
+  const db=$("#disBtn");if(db)db.onclick=()=>{ls.del("atm_api");ls.del("atm_pass");useSeed();render()};
+  const sb=$("#seedBtn");if(sb)sb.onclick=async()=>{sb.disabled=true;try{
+      await post({tab:"ATMs",rows:SEED.atms.map(([a,s])=>({"ATM":a,"Status":s}))});
+      await post({tab:"Data",rows:SEED.monthly.map(r=>dataObj(seedRow(r)))});
+      await post({tab:"Repairs",rows:SEED.repairs.map(r=>repObj(seedRep(r)))});
+      await loadLive();render();setStatus("#setStatus","History copied into the Sheet.",true)}catch(err){sb.disabled=false;setStatus("#setStatus","Could not copy: "+err.message,false)}};
 }
 
-/* ---------- filters ---------- */
-document.getElementById('from').onchange=e=>{st.from=e.target.value;if(st.from>st.to)st.to=st.from;document.getElementById('to').value=st.to;chips();render()};
-document.getElementById('to').onchange=e=>{st.to=e.target.value;if(st.to<st.from)st.from=st.to;document.getElementById('from').value=st.from;chips();render()};
-document.getElementById('atm').onchange=e=>{st.atm=e.target.value;if(st.atm)st.sel=st.atm;render()};
-document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{const q=c.dataset.q,n=MONTHS.length;st.to=MONTHS[n-1];
-  if(q==='all')st.from=MONTHS[0];else if(q==='fy'){const y=+st.to.slice(0,4),m=+st.to.slice(5,7);const fy=(m>=4?y:y-1)+'-04';st.from=MONTHS.find(x=>x>=fy)||MONTHS[0]}else st.from=MONTHS[Math.max(0,n-(+q))];
-  document.getElementById('from').value=st.from;document.getElementById('to').value=st.to;chips(c);render()});
-function chips(on){document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c===on))}
-document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{st.tab=t.dataset.t;render()});
-
-/* ---------- data in / out ---------- */
-function toCSV(rows){const q=v=>/[",\n]/.test(String(v))?'"'+String(v).replace(/"/g,'""')+'"':v;return [HEAD.join(',')].concat(rows.map(r=>[r.atm,r.period,r.cans,r.revenue,r.op,r.elec,r.rep,r.other].map(q).join(','))).join('\n')}
-function save(name,blob){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
-function downloadCSV(){const rows=RAW.filter(r=>{const m=r.period.slice(0,7);return m>=st.from&&m<=st.to&&(!st.atm||r.atm===st.atm)});save(`ATM data ${st.from} to ${st.to}.csv`,new Blob([toCSV(rows)],{type:'text/csv'}))}
-function downloadTemplate(){
-  const last=MONTHS[MONTHS.length-1];let y=+last.slice(0,4),m=+last.slice(5,7)+1;if(m>12){m=1;y++}const next=y+'-'+String(m).padStart(2,'0');
-  const aoa=[HEAD].concat(ATMS.map(a=>[a,next,'','','','','','']));
-  if(window.XLSX){const ws=XLSX.utils.aoa_to_sheet(aoa);ws['!cols']=[{wch:22},{wch:12}].concat(Array(6).fill({wch:14}));
-    const help=XLSX.utils.aoa_to_sheet([['How to fill this template'],['One row per ATM per period.'],['Period: month as 2026-10, or the week’s start date as 2026-10-05 for weekly data.'],['Amounts in rupees, numbers only. Cans = cans sold in the period.'],['Other costs = water charges, housekeeping and anything not in the other columns.'],['A row with the same ATM and Period as an existing row replaces it.']]);
-    const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Data');XLSX.utils.book_append_sheet(wb,help,'Help');XLSX.writeFile(wb,'ATM upload template '+next+'.xlsx')}
-  else save('ATM upload template '+next+'.csv',new Blob([aoa.map(r=>r.join(',')).join('\n')],{type:'text/csv'}));
-}
-function openUpload(){document.getElementById('up').classList.add('on');document.getElementById('upmsg').innerHTML='';document.getElementById('preview').innerHTML='';document.getElementById('upbtns').innerHTML='';pendingRows=null}
-function closeM(id){document.getElementById(id).classList.remove('on')}
-const drop=document.getElementById('drop'),fin=document.getElementById('file');
-drop.onclick=()=>fin.click();fin.onchange=()=>fin.files[0]&&readFile(fin.files[0]);
-drop.ondragover=e=>{e.preventDefault();drop.classList.add('hot')};drop.ondragleave=()=>drop.classList.remove('hot');
-drop.ondrop=e=>{e.preventDefault();drop.classList.remove('hot');e.dataTransfer.files[0]&&readFile(e.dataTransfer.files[0])};
-function msg(id,t,cls){document.getElementById(id).innerHTML=t?`<div class="msg ${cls}">${t}</div>`:''}
-/* ---------- smart import: reads Dhara Sansthan's own monthly statement, the template, or any sheet with one row per ATM ---------- */
-const FIELD_LABEL={ignore:'— ignore —',atm:'ATM name',period:'Period (month/week)',cans:'Cans sold',revenue:'Revenue',revpart:'Revenue (part, added up)',op:'Operator pay',elec:'Electricity',rep:'Repairs and consumables',other:'Other costs',total:'Total costs (check only)'};
-let IMP=null;   // current import session
-const lc=v=>String(v==null?'':v).replace(/\s+/g,' ').trim().toLowerCase();
+/* ---------- smart import: Dhara Sansthan's own monthly statement, the template, or any sheet with one row per ATM ---------- */
+const FIELD_LABEL={ignore:"— ignore —",atm:"ATM name",period:"Period (month/week)",cans:"Cans sold",revenue:"Revenue",revpart:"Revenue (part, added up)",op:"Operator pay",elec:"Electricity",rep:"Repairs and consumables",other:"Other costs",newcards:"New cards",cards:"Cards registered",detail:"Repair note (text)",total:"Total costs (check only)"};
+const lc=v=>String(v==null?"":v).replace(/\s+/g," ").trim().toLowerCase();
 function guessField(label,parent){
-  const l=lc(label),p=lc(parent);if(!l)return 'ignore';
-  if(/sr\.? ?no|^s\.? ?no|serial|^#$|connection|atm card|new connect|detail|remark|note|surplus|balance|minus|profit|litre|ltr|^sl/.test(l))return 'ignore';
-  if(/name of (the )?plant|plant name|^atm( name)?$|^plant$|village|^site|location|kendra|^atm\b/.test(l))return 'atm';
-  if(/^(month|period|date|week|week start|month \(yyyy-mm\))$/.test(l))return 'period';
-  if(/total exp|total cost|total payment|^total$|total \(₹\)/.test(l))return p.includes('receipt')?'ignore':'total';
-  if(/revenu|revenue|income|sales|collection|amount received/.test(l))return /total/.test(l)||!p.includes('receipt')?'revenue':'revpart';
-  if(/recharge|cans ?\/ ?others/.test(l))return 'revpart';
-  if(/cans?\b|water sold|taps|units sold/.test(l))return 'cans';
-  if(p.includes('receipt'))return 'revpart';
-  if(/operator|salary|wage/.test(l))return 'op';
-  if(/electric|power|bijli|electricity bill/.test(l))return 'elec';
-  if(/repair|maint|filter|consumable|chemical|antiscal|spare/.test(l))return 'rep';
-  if(/water charge|other|misc|housekeep|rent|cleaning/.test(l))return 'other';
-  return 'ignore';
+  const l=lc(label),p=lc(parent);if(!l)return "ignore";
+  if(/new connect|new card|cards issued/.test(l))return "newcards";
+  if(/total connection|cards registered|total cards|connections at (month )?end/.test(l))return "cards";
+  if(/^detail|remark|^notes?$|expense detail/.test(l))return "detail";
+  if(/sr\.? ?no|^s\.? ?no|serial|^#$|connection|atm card|surplus|balance|minus|profit|litre|ltr|^sl/.test(l))return "ignore";
+  if(/name of (the )?plant|plant name|^atm( name)?$|^plant$|village|^site|location|kendra|^atm\b/.test(l))return "atm";
+  if(/^(month|period|date|week|week start|month \(yyyy-mm\))$/.test(l))return "period";
+  if(/total exp|total cost|total payment|^total$|total \(₹\)/.test(l))return p.includes("receipt")?"ignore":"total";
+  if(/revenu|revenue|income|sales|collection|amount received/.test(l))return /total/.test(l)||!p.includes("receipt")?"revenue":"revpart";
+  if(/recharge|cans ?\/ ?others/.test(l))return "revpart";
+  if(/cans?\b|water sold|taps|units sold/.test(l))return "cans";
+  if(p.includes("receipt"))return "revpart";
+  if(/operator|salary|wage/.test(l))return "op";
+  if(/electric|power|bijli/.test(l))return "elec";
+  if(/repair|maint|filter|consumable|chemical|antiscal|spare/.test(l))return "rep";
+  if(/water charge|other|misc|housekeep|rent|cleaning/.test(l))return "other";
+  return "ignore";
 }
 const MONTHS_RE=/(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?[\s.\-',]*(\d{4}|\d{2})\b/i;
-function periodFromText(v){if(v instanceof Date)return normPeriod(v).slice(0,7);const s=String(v||'');const m=s.match(MONTHS_RE);if(m){const i=MN.findIndex(x=>x.toLowerCase()===m[1].slice(0,3).toLowerCase());const y=m[2].length===2?'20'+m[2]:m[2];return y+'-'+String(i+1).padStart(2,'0')}const n=s.match(/\b(20\d{2})-(\d{2})\b/);return n?n[1]+'-'+n[2]:null}
+function periodFromText(v){if(v instanceof Date)return normPeriod(v).slice(0,7);const s=String(v||"");const m=s.match(MONTHS_RE);if(m){const i=MN.findIndex(x=>x.toLowerCase()===m[1].slice(0,3).toLowerCase());const y=m[2].length===2?"20"+m[2]:m[2];return y+"-"+String(i+1).padStart(2,"0")}const n=s.match(/\b(20\d{2})-(\d{2})\b/);return n?n[1]+"-"+n[2]:null}
 function analyseSheet(aoa,name){
-  // 1. header row: the first row with an ATM / plant-name column
-  let hr=-1;for(let i=0;i<Math.min(aoa.length,30);i++){if((aoa[i]||[]).some(c=>guessField(c,'')==='atm')){hr=i;break}}
-  if(hr<0)return {name,ok:false,why:'no ATM / plant-name column found'};
+  let hr=-1;for(let i=0;i<Math.min(aoa.length,30);i++){if((aoa[i]||[]).some(c=>guessField(c,"")==="atm")){hr=i;break}}
+  if(hr<0)return {name,ok:false};
   const top=aoa[hr]||[],nxt=aoa[hr+1]||[];const width=Math.max(top.length,nxt.length);
-  const twoRow=nxt.filter(c=>typeof c==='string'&&c.trim()).length>=3&&nxt.filter(c=>typeof c==='number').length<=1;
-  let parent='';const cols=[];
-  for(let c=0;c<width;c++){const t=top[c],u=twoRow?nxt[c]:'';if(t!=null&&String(t).trim())parent=String(t);else if(!u)parent='';
-    const label=twoRow&&u!=null&&String(u).trim()?(String(u)):(t!=null?String(t):'');const par=twoRow&&(t==null||!String(t).trim())?parent:(twoRow&&u?String(t):'');
-    cols.push({c,label:label.replace(/\s+/g,' ').trim(),parent:par.replace(/\s+/g,' ').trim()})}
+  const twoRow=nxt.filter(c=>typeof c==="string"&&c.trim()).length>=3&&nxt.filter(c=>typeof c==="number").length<=1;
+  let parent="";const cols=[];
+  for(let c=0;c<width;c++){const t=top[c],u=twoRow?nxt[c]:"";if(t!=null&&String(t).trim())parent=String(t);else if(!u)parent="";
+    const label=twoRow&&u!=null&&String(u).trim()?String(u):(t!=null?String(t):"");const par=twoRow&&(t==null||!String(t).trim())?parent:(twoRow&&u?String(t):"");
+    cols.push({c,label:label.replace(/\s+/g," ").trim(),parent:par.replace(/\s+/g," ").trim()})}
   const start=hr+(twoRow?2:1);
-  // 2. period: a column, else the title rows, else the sheet name
-  let period=null,psrc='';for(let i=0;i<hr&&!period;i++)for(const c of aoa[i]||[]){const p=periodFromText(c);if(p){period=p;psrc='title';break}}
-  if(!period){const p=periodFromText(name);if(p){period=p;psrc='sheet name'}}
+  let period=null,psrc="";for(let i=0;i<hr&&!period;i++)for(const c of aoa[i]||[]){const p=periodFromText(c);if(p){period=p;psrc="title";break}}
+  if(!period){const p=periodFromText(name);if(p){period=p;psrc="sheet name"}}
   return {name,ok:true,aoa,cols,start,period,psrc};
 }
-function autoMap(sh){const sig=sh.cols.map(c=>lc(c.parent+'|'+c.label)).join('~');let saved=null;try{saved=JSON.parse(ls.get('map:'+sig)||'null')}catch(e){}
+function autoMap(sh){const sig=sh.cols.map(c=>lc(c.parent+"|"+c.label)).join("~");let saved=null;try{saved=JSON.parse(ls.get("map2:"+sig)||"null")}catch(e){}
   sh.sig=sig;sh.map=saved||sh.cols.map(c=>guessField(c.label,c.parent));sh.remembered=!!saved;
-  const hasRevTotal=sh.map.includes('revenue');if(hasRevTotal)sh.map=sh.map.map(f=>f==='revpart'?'ignore':f)}
+  if(sh.map.includes("revenue"))sh.map=sh.map.map(f=>f==="revpart"?"ignore":f)}
 function extract(sh){
-  const M=sh.map,rows=[],errs=[];let total=null,checks=0,mism=0;
-  const ci=f=>M.map((x,i)=>x===f?i:-1).filter(i=>i>=0);const atmC=ci('atm')[0],perC=ci('period')[0];
-  if(atmC==null)return {rows,errs:['No column is set as “ATM name”.']};
-  for(let i=sh.start;i<sh.aoa.length;i++){const r=sh.aoa[i]||[];const a=String(r[atmC]==null?'':r[atmC]).replace(/\s+/g,' ').trim();
+  const M=sh.map,rows=[],errs=[];let checks=0,mism=0;
+  const ci=f=>M.map((x,i)=>x===f?i:-1).filter(i=>i>=0);const atmC=ci("atm")[0],perC=ci("period")[0];
+  if(atmC==null)return {rows,errs:["No column is set as “ATM name”."]};
+  for(let i=sh.start;i<sh.aoa.length;i++){const r=sh.aoa[i]||[];const a=String(r[atmC]==null?"":r[atmC]).replace(/\s+/g," ").trim();
     if(/^(grand )?total\b|^summary/i.test(a))break;if(!a||/^\d+(\.\d+)?$/.test(a))continue;
-    const S=f=>ci(f).reduce((s,j)=>{const v=num(r[j]);return s+(isNaN(v)?0:v)},0);
-    const row={atm:a,period:perC!=null?normPeriod(r[perC]):sh.manualPeriod||sh.period,cans:S('cans'),revenue:S('revenue')+S('revpart'),op:S('op'),elec:S('elec'),rep:S('rep'),other:S('other')};
+    const F=f=>ci(f).reduce((s,j)=>s+num(sh.aoa[i][j]),0);
+    const tc=ci("cards");
+    const row={atm:a,period:perC!=null?normPeriod(r[perC]):sh.manualPeriod||sh.period,cans:F("cans"),revenue:F("revenue")+F("revpart"),operatorPay:F("op"),electricity:F("elec"),repairs:F("rep"),otherCosts:F("other"),
+      newCards:ci("newcards").length?F("newcards"):null,totalCards:tc.length&&r[tc[0]]!=null&&r[tc[0]]!==""?num(r[tc[0]]):null,
+      detail:ci("detail").map(j=>r[j]).filter(v=>v!=null&&String(v).trim()).join(" ").replace(/\s+/g," ").trim(),source:"Upload"};
     if(!row.period){errs.push(`${sh.name} · ${a}: no month found`);continue}
     if(!row.cans&&!row.revenue&&!costOf(row))continue;
     if(/^others?$/i.test(a)&&!row.cans)continue;
-    const tc=ci('total');if(tc.length){const t=num(r[tc[tc.length-1]]);if(!isNaN(t)&&t>0){checks++;if(Math.abs(t-costOf(row))>Math.max(5,t*0.01))mism++}}
+    const tcs=ci("total");if(tcs.length){const t=num(r[tcs[tcs.length-1]]);if(t>0){checks++;if(Math.abs(t-costOf(row))>Math.max(5,t*0.01))mism++}}
     rows.push(row)}
   return {rows,errs,checks,mism};
 }
+function msg(id,t,cls){const el=$(id);if(el)el.innerHTML=t?`<div class="msg ${cls}">${t}</div>`:""}
 function readFile(f){
-  msg('upmsg','Reading '+esc(f.name)+'…','warn');document.getElementById('preview').innerHTML='';document.getElementById('upbtns').innerHTML='';
+  msg("#upmsg","Reading "+esc(f.name)+"…","warn");$("#preview").innerHTML="";$("#upbtns").innerHTML="";
   const rd=new FileReader();rd.onload=e=>{try{let sheets=[];
-      if(/\.csv$/i.test(f.name)||!window.XLSX){const txt=new TextDecoder().decode(e.target.result);sheets=[{name:f.name,aoa:txt.split(/\r?\n/).filter(l=>l.trim()).map(l=>l.match(/("([^"]|"")*"|[^,]*)(,|$)/g).slice(0,-1).map(c=>{c=c.replace(/,$/,'').replace(/^"|"$/g,'').replace(/""/g,'"');const n=Number(c);return c!==''&&!isNaN(n)?n:c}))}]}
-      else{const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});sheets=wb.SheetNames.filter(n=>!/^help$/i.test(n)).map(n=>({name:n,aoa:XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:null})}))}
-      startImport(f.name,sheets)}catch(err){msg('upmsg','Could not read the file: '+esc(err.message),'err')}};
+      if(/\.csv$/i.test(f.name)||!window.XLSX){const txt=new TextDecoder().decode(e.target.result);sheets=[{name:f.name,aoa:txt.split(/\r?\n/).filter(l=>l.trim()).map(l=>l.match(/("([^"]|"")*"|[^,]*)(,|$)/g).slice(0,-1).map(c=>{c=c.replace(/,$/,"").replace(/^"|"$/g,"").replace(/""/g,'"');const n=Number(c);return c!==""&&!isNaN(n)?n:c}))}]}
+      else{const wb=XLSX.read(e.target.result,{type:"array",cellDates:true});sheets=wb.SheetNames.filter(n=>!/^help$/i.test(n)).map(n=>({name:n,aoa:XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:null})}))}
+      const an=sheets.map(s=>analyseSheet(s.aoa,s.name));const good=an.filter(s=>s.ok);good.forEach(autoMap);
+      S.imp={fname:f.name,sheets:good,skipped:an.filter(s=>!s.ok),active:0};
+      if(!good.length){S.imp=null;msg("#upmsg","No sheet with a list of ATMs was found. Each sheet needs a column of ATM or plant names, with the figures beside it.","err");return}
+      renderImport()}catch(err){msg("#upmsg","Could not read the file: "+esc(err.message),"err")}};
   rd.readAsArrayBuffer(f);
 }
-function startImport(fname,sheets){
-  const an=sheets.map(s=>analyseSheet(s.aoa,s.name));const good=an.filter(s=>s.ok);good.forEach(autoMap);
-  const skipped=an.filter(s=>!s.ok);IMP={fname,sheets:good,skipped,active:0};
-  if(!good.length){msg('upmsg','No sheet with a list of ATMs was found. Each sheet needs a column of ATM or plant names, with the figures beside it.','err');return}
-  renderImport();
-}
 function renderImport(){
+  const IMP=S.imp;if(!IMP||!$("#preview"))return;
   let out=[],errs=[],checks=0,mism=0;IMP.sheets.forEach(sh=>{const x=extract(sh);sh.res=x;out=out.concat(x.rows);errs=errs.concat(x.errs);checks+=x.checks||0;mism+=x.mism||0});
-  const merged={};out.forEach(r=>{const k=r.atm+'|'+r.period;const o=merged[k];if(o){['cans','revenue','op','elec','rep','other'].forEach(f=>o[f]+=r[f])}else merged[k]={...r}});out=Object.values(merged);
-  pendingRows=out;const need=[];const M=IMP.sheets[0].map;['atm','cans','revenue'].forEach(f=>{if(!IMP.sheets.some(s=>s.map.includes(f)||(f==='revenue'&&s.map.includes('revpart'))))need.push(FIELD_LABEL[f])});
-  const noPeriod=IMP.sheets.filter(s=>!s.map.includes('period')&&!s.period&&!s.manualPeriod);
-  const known=new Set(ATMS),newAtm=[...new Set(out.map(r=>r.atm).filter(a=>!known.has(a)))];
-  const keys=new Set(RAW.map(r=>r.atm+'|'+r.period));const repl=out.filter(r=>keys.has(r.atm+'|'+r.period)).length;
+  const merged={};out.forEach(r=>{const kk=r.atm+"|"+r.period;const o=merged[kk];if(o){["cans","revenue","operatorPay","electricity","repairs","otherCosts"].forEach(f=>o[f]+=r[f]);if(r.newCards!=null)o.newCards=(o.newCards||0)+r.newCards;if(r.totalCards!=null)o.totalCards=r.totalCards;if(r.detail)o.detail=(o.detail?o.detail+" ":"")+r.detail}else merged[kk]={...r}});out=Object.values(merged);
+  S.pending=out;S.pendingRep=out.filter(r=>r.repairs>0).map(r=>({atm:r.atm,date:r.period.slice(0,7)+"-01",item:"Repairs and consumables"+(r.detail?": "+r.detail.slice(0,300):""),cost:r.repairs,daysDown:null,source:"Monthly sheet"}));
+  const has=f=>IMP.sheets.some(s=>s.map.includes(f));
+  const need=[];if(!has("atm"))need.push("ATM name");if(!has("cans"))need.push("Cans sold");if(!has("revenue")&&!has("revpart"))need.push("Revenue");
+  const noPeriod=IMP.sheets.filter(s=>!s.map.includes("period")&&!s.period&&!s.manualPeriod);
+  const known=new Set(Object.keys(S.atms)),newAtm=[...new Set(out.map(r=>r.atm).filter(a=>!known.has(a)))];
+  const keys=new Set(S.raw.map(r=>r.atm+"|"+r.period));const repl=out.filter(r=>keys.has(r.atm+"|"+r.period)).length;
   const ms=[...new Set(out.map(r=>r.period.slice(0,7)))].sort();const rev=sum(out,r=>r.revenue),cost=sum(out,costOf);
-  const kind=IMP.sheets.some(s=>/receipt|payment/i.test(s.cols.map(c=>c.parent).join(' ')))?'Dhara Sansthan monthly statement':IMP.sheets[0].cols.map(c=>lc(c.label)).join(',').startsWith('atm,period')?'ATM Monitor template':'custom layout';
-  msg('upmsg',`<b>${esc(IMP.fname)}</b> · recognised as <b>${kind}</b> · ${IMP.sheets.length} sheet(s) read${IMP.skipped.length?', '+IMP.skipped.length+' skipped ('+IMP.skipped.map(s=>esc(s.name)).join(', ')+')':''}.`,need.length||noPeriod.length?'warn':'okm');
-  let p='';
-  if(need.length)p+=`<div class="msg err">Could not find: <b>${need.join(', ')}</b>. Set the right column below${api()?' or use <b>Ask AI to map the columns</b>':''}.</div>`;
-  if(noPeriod.length)p+=`<div class="msg warn">No month found in ${noPeriod.map(s=>esc(s.name)).join(', ')}. Pick it: <input type="month" id="manPer" onchange="IMP.sheets.forEach(s=>{if(!s.period&&!s.map.includes('period'))s.manualPeriod=this.value});renderImport()"></div>`;
-  if(out.length){p+=`<div class="kpis">${kpi('Rows',out.length,repl?repl+' replace existing':'all new')}${kpi('Months',ms.length,ms.length>1?mlab(ms[0])+' – '+mlab(ms[ms.length-1]):ms.length?mlab(ms[0]):'')}${kpi('ATMs',new Set(out.map(r=>r.atm)).size,newAtm.length?newAtm.length+' new name(s)':'all known')}${kpi('Revenue',L(rev),'')}${kpi('Surplus',L(rev-cost),'',rev-cost<0?'bad':'good')}</div>`;
-    if(checks)p+=mism?`<div class="msg warn">Cost check: ${mism} of ${checks} rows do not add up to the sheet’s own “Total” column. Check the column mapping below.</div>`:`<div class="msg okm">Cost check passed: all ${checks} rows add up to the sheet’s own total.</div>`;}
-  if(newAtm.length)p+=`<div class="msg warn">New ATM name(s): <b>${newAtm.map(esc).join(', ')}</b>. If a name is spelt differently from before, fix it in the file, or it will show as a separate ATM.</div>`;
-  if(errs.length)p+=`<div class="msg warn">${errs.slice(0,6).map(esc).join('<br>')}${errs.length>6?'<br>…':''}</div>`;
-  // mapping editor for the active sheet
-  const sh=IMP.sheets[IMP.active];
-  p+=`<details ${need.length?'open':''} style="margin:8px 0"><summary style="cursor:pointer;font-weight:700;color:var(--blue)">Column matching ${sh.remembered?'(remembered from a previous upload)':'(automatic)'}: check or change</summary>
-   ${IMP.sheets.length>1?`<div class="row" style="margin:6px 0"><label class="note">Sheet</label><select onchange="IMP.active=+this.value;renderImport()">${IMP.sheets.map((s,i)=>`<option value="${i}" ${i===IMP.active?'selected':''}>${esc(s.name)}${s.period?' · '+mlab(s.period):''}</option>`).join('')}</select><span class="note">Changes apply to all sheets with the same columns.</span></div>`:''}
-   <div class="scroll" style="max-height:260px"><table><thead><tr><th>Column in your file</th><th>Example values</th><th>Used as</th></tr></thead><tbody>${sh.cols.map((c,i)=>{const ex=sh.aoa.slice(sh.start,sh.start+3).map(r=>r&&r[c.c]).filter(v=>v!=null&&v!=='').map(v=>v instanceof Date?normPeriod(v):String(v).slice(0,18));
-     return `<tr><td>${esc((c.parent&&c.parent!==c.label?c.parent+' › ':'')+(c.label||'(no header)'))}</td><td class="note">${esc(ex.join(' · '))}</td><td><select data-col="${i}" class="mapsel">${Object.keys(FIELD_LABEL).map(f=>`<option value="${f}" ${sh.map[i]===f?'selected':''}>${FIELD_LABEL[f]}</option>`).join('')}</select></td></tr>`}).join('')}</tbody></table></div>
-   <div class="row" style="margin-top:6px">${api()?'<button class="btn ghost" onclick="aiMap()">✨ Ask AI to map the columns</button>':'<span class="note">Connect the Google Sheet in Settings to use AI matching.</span>'}<span class="note">Your choices are remembered for files with the same columns.</span></div></details>`;
-  if(out.length)p+=`<div class="scroll" style="max-height:200px"><table><thead><tr>${HEAD.map((x,i)=>`<th class="${i>1?'n':''}">${x}</th>`).join('')}</tr></thead><tbody>${out.slice(0,40).map(r=>`<tr><td>${esc(r.atm)}</td><td>${r.period}</td>${[r.cans,r.revenue,r.op,r.elec,r.rep,r.other].map(v=>`<td class="n">${IN(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>${out.length>40?`<p class="note">Showing 40 of ${out.length} rows.</p>`:''}`;
-  document.getElementById('preview').innerHTML=p;
-  document.querySelectorAll('.mapsel').forEach(s=>s.onchange=()=>{const sh=IMP.sheets[IMP.active];sh.map[+s.dataset.col]=s.value;IMP.sheets.forEach(o=>{if(o!==sh&&o.sig===sh.sig)o.map=sh.map.slice()});ls.set('map:'+sh.sig,JSON.stringify(sh.map));renderImport()});
+  const kind=IMP.sheets.some(s=>/receipt|payment/i.test(s.cols.map(c=>c.parent).join(" ")))?"Dhara Sansthan monthly statement":"one row per ATM";
+  msg("#upmsg",`<b>${esc(IMP.fname)}</b> · read as <b>${kind}</b> · ${IMP.sheets.length} sheet(s): ${IMP.sheets.map(s=>esc(s.name)+(s.period?" ("+mLabel(s.period)+", from the "+s.psrc+")":"")).join(", ")}${IMP.skipped.length?" · skipped: "+IMP.skipped.map(s=>esc(s.name)).join(", "):""}.`,need.length||noPeriod.length?"warn":"ok");
+  const tile=(kk,v,d,cls)=>`<div class="kpi ${cls||""}"><span class="k">${kk}</span><span class="v">${v}</span><span class="d">${d}</span></div>`;
+  let p="";
+  if(need.length)p+=`<div class="msg err">Could not find: <b>${need.join(", ")}</b>. Set the right column below${api()?" or use <b>Ask AI to map the columns</b>":""}.</div>`;
+  if(noPeriod.length)p+=`<div class="msg warn">No month found in ${noPeriod.map(s=>esc(s.name)).join(", ")}. Pick it: <input type="month" id="manPer"></div>`;
+  if(out.length){p+=`<h3 style="margin:6px 0 0">Step 4 · Check what was read</h3><div class="kpis">${tile("Rows",out.length,repl?repl+" replace existing":"all new")}${tile("Months",ms.length,ms.length>1?mLabel(ms[0])+" – "+mLabel(ms[ms.length-1]):ms.length?mLabel(ms[0]):"")}${tile("ATMs",new Set(out.map(r=>r.atm)).size,newAtm.length?newAtm.length+" new name(s)":"all known")}${tile("Revenue",lakh(rev),"")}${tile("Surplus",lakh(rev-cost),"",rev-cost<0?"bad":"good")}</div>`;
+    p+=checks?(mism?`<div class="msg warn">Cost check: ${mism} of ${checks} rows do not add up to the sheet's own “Total” column. Check the column matching below.</div>`:`<div class="msg ok">✔ Cost check passed: all ${checks} rows add up to the sheet's own total.</div>`):`<div class="msg warn">No “Total” cost column to check against. Compare the totals above with the file.</div>`;}
+  if(newAtm.length)p+=`<div class="msg warn">New ATM name(s): <b>${newAtm.map(esc).join(", ")}</b>. If a name is spelt differently from before, fix it in the file, or it will show as a separate ATM.</div>`;
+  if(errs.length)p+=`<div class="msg warn">${errs.slice(0,6).map(esc).join("<br>")}${errs.length>6?"<br>…":""}</div>`;
+  // extraction summary: which columns fed which figure
+  const sh=IMP.sheets[IMP.active];const colName=c=>(c.parent&&c.parent!==c.label?c.parent+" › ":"")+(c.label||"(no header)");
+  const fed=Object.keys(FIELD_LABEL).filter(f=>f!=="ignore").map(f=>({f,cols:sh.cols.filter((c,i)=>sh.map[i]===f).map(colName)})).filter(x=>x.cols.length||["atm","cans","revenue"].includes(x.f));
+  const totF={cans:sum(out,r=>r.cans),revenue:rev,op:sum(out,r=>r.operatorPay),elec:sum(out,r=>r.electricity),rep:sum(out,r=>r.repairs),other:sum(out,r=>r.otherCosts),newcards:sum(out,r=>num(r.newCards))};
+  p+=`<div class="scroll"><table><thead><tr><th class="l">Dashboard figure</th><th class="l">Taken from (sheet “${esc(sh.name)}”)</th><th>Total read</th></tr></thead><tbody>${fed.map(x=>`<tr><td class="l"><b>${esc(FIELD_LABEL[x.f])}</b></td><td class="l">${x.cols.length?x.cols.map(esc).join(" + "):'<span class="neg">not found</span>'}</td><td>${x.f==="cans"||x.f==="newcards"?Math.round(totF[x.f]).toLocaleString("en-IN"):totF[x.f]!=null?inr(totF[x.f]):x.f==="period"||x.f==="atm"?"":"–"}</td></tr>`).join("")}
+   ${!sh.map.includes("period")?`<tr><td class="l"><b>Month</b></td><td class="l">${sh.period?"the sheet "+esc(sh.psrc)+": "+mLabel(sh.period):sh.manualPeriod?"picked: "+mLabel(sh.manualPeriod):'<span class="neg">not found</span>'}</td><td></td></tr>`:""}
+   ${S.pendingRep.length?`<tr><td class="l"><b>Repair log</b></td><td class="l">${S.pendingRep.length} entries from the repairs figure${has("detail")?" and the Detail note":""}</td><td></td></tr>`:""}</tbody></table></div>`;
+  p+=`<details ${need.length?"open":""}><summary>Column matching ${sh.remembered?"(remembered from a previous upload)":"(automatic)"}: check or change</summary>
+   ${IMP.sheets.length>1?`<div class="row start" style="margin:6px 0"><label class="inline">Sheet <select id="impSheet">${IMP.sheets.map((s,i)=>`<option value="${i}" ${i===IMP.active?"selected":""}>${esc(s.name)}</option>`).join("")}</select></label><span class="note">Changes apply to all sheets with the same columns.</span></div>`:""}
+   <div class="scroll" style="max-height:300px;overflow-y:auto"><table><thead><tr><th class="l">Column in your file</th><th class="l">Example values</th><th class="l">Used as</th></tr></thead><tbody>${sh.cols.map((c,i)=>{const ex=sh.aoa.slice(sh.start,sh.start+3).map(r=>r&&r[c.c]).filter(v=>v!=null&&v!=="").map(v=>v instanceof Date?normPeriod(v):String(v).slice(0,18));
+     return `<tr><td class="l">${esc(colName(c))}</td><td class="l note">${esc(ex.join(" · "))}</td><td class="l"><select data-col="${i}" class="mapsel">${Object.keys(FIELD_LABEL).map(f=>`<option value="${f}" ${sh.map[i]===f?"selected":""}>${FIELD_LABEL[f]}</option>`).join("")}</select></td></tr>`}).join("")}</tbody></table></div>
+   <div class="row start" style="margin-top:6px">${api()?'<button type="button" class="btn ghost" id="aiBtn">✨ Ask AI to map the columns</button>':'<span class="note">AI matching works once the Google Sheet is connected.</span>'}<span class="note">Your choices are remembered for files with the same columns.</span></div></details>`;
+  if(out.length)p+=`<div class="scroll" style="max-height:220px;overflow-y:auto"><table><thead><tr><th>ATM</th><th>Period</th><th>Cans</th><th>Revenue</th><th>Operator</th><th>Power</th><th>Repairs</th><th>Other</th><th>New cards</th><th>Cards</th></tr></thead><tbody>${out.slice(0,40).map(r=>`<tr><td>${esc(r.atm)}</td><td>${r.period}</td>${[r.cans,r.revenue,r.operatorPay,r.electricity,r.repairs,r.otherCosts].map(v=>`<td>${Math.round(v).toLocaleString("en-IN")}</td>`).join("")}<td>${r.newCards==null?"–":r.newCards}</td><td>${r.totalCards==null?"–":r.totalCards}</td></tr>`).join("")}</tbody></table></div>${out.length>40?`<p class="note">Showing 40 of ${out.length} rows.</p>`:""}`;
+  $("#preview").innerHTML=p;
+  document.querySelectorAll(".mapsel").forEach(s=>s.onchange=()=>{const sh=IMP.sheets[IMP.active];sh.map[+s.dataset.col]=s.value;IMP.sheets.forEach(o=>{if(o!==sh&&o.sig===sh.sig)o.map=sh.map.slice()});ls.set("map2:"+sh.sig,JSON.stringify(sh.map));renderImport()});
+  const mp=$("#manPer");if(mp)mp.onchange=()=>{IMP.sheets.forEach(s=>{if(!s.period&&!s.map.includes("period"))s.manualPeriod=mp.value});renderImport()};
+  const is=$("#impSheet");if(is)is.onchange=()=>{IMP.active=+is.value;renderImport()};
+  const ab=$("#aiBtn");if(ab)ab.onclick=aiMap;
   const ok=out.length&&!need.length;
-  document.getElementById('upbtns').innerHTML=ok?`<button class="btn ghost" onclick="applyLocal()">Show in dashboard only</button>${api()?'<button class="btn dark" onclick="saveToSheet()">Save to Google Sheet</button>':'<span class="note">Connect the Google Sheet in Settings to save permanently.</span>'}`:'';
+  $("#upbtns").innerHTML=ok?`<span class="note">Step 5 ·</span><button type="button" class="btn ghost" id="locBtn">Show in dashboard only</button>${api()?'<button type="button" class="btn" id="saveBtn">Save to Google Sheet</button>':'<span class="note">Connect the Google Sheet in Master data to save permanently.</span>'}`:"";
+  const lb=$("#locBtn");if(lb)lb.onclick=()=>{mergeRaw(S.pending);mergeRep(S.pendingRep);S.src=S.src==="live"?"live":"local";jumpTo(S.pending);S.imp=null;S.tab="overview";render()};
+  const sb=$("#saveBtn");if(sb)sb.onclick=saveUpload;
 }
 async function aiMap(){
-  const pass=ls.get('atm_pass')||prompt('Upload passcode');if(!pass)return;const sh=IMP.sheets[IMP.active];
-  msg('upmsg','Asking AI to read the columns…','warn');
+  const IMP=S.imp,sh=IMP.sheets[IMP.active];msg("#upmsg","Asking AI to read the columns…","warn");
   try{const samples=sh.aoa.slice(sh.start,sh.start+3).map(r=>sh.cols.map(c=>{const v=r&&r[c.c];return v instanceof Date?normPeriod(v):v}));
-    const res=await fetch(api(),{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'map',passcode:pass,sheet:sh.name,columns:sh.cols.map(c=>(c.parent&&c.parent!==c.label?c.parent+' > ':'')+c.label),samples})});
-    const j=await res.json();if(!j.ok)throw new Error(j.error||'AI mapping failed');ls.set('atm_pass',pass);
-    sh.map=sh.cols.map((c,i)=>FIELD_LABEL[j.mapping[i]]?j.mapping[i]:'ignore');IMP.sheets.forEach(o=>{if(o!==sh&&o.sig===sh.sig)o.map=sh.map.slice()});
-    if(j.period&&!sh.period)IMP.sheets.forEach(o=>{if(!o.period)o.manualPeriod=j.period});
-    ls.set('map:'+sh.sig,JSON.stringify(sh.map));renderImport();
-  }catch(err){msg('upmsg','AI could not map the columns: '+esc(err.message)+'. Set them by hand below.','err')}
+    const j=await post({action:"map",sheet:sh.name,columns:sh.cols.map(c=>(c.parent&&c.parent!==c.label?c.parent+" > ":"")+c.label),samples});
+    sh.map=sh.cols.map((c,i)=>FIELD_LABEL[j.mapping[i]]?j.mapping[i]:"ignore");IMP.sheets.forEach(o=>{if(o!==sh&&o.sig===sh.sig)o.map=sh.map.slice()});
+    if(j.period)IMP.sheets.forEach(o=>{if(!o.period)o.manualPeriod=j.period});
+    ls.set("map2:"+sh.sig,JSON.stringify(sh.map));renderImport();
+  }catch(err){msg("#upmsg","AI could not map the columns: "+esc(err.message)+". Set them by hand below.","err")}
 }
-function mergeRows(rows){const m={};RAW.forEach(r=>m[r.atm+'|'+r.period]=r);rows.forEach(r=>m[r.atm+'|'+r.period]=r);RAW=Object.values(m)}
-function applyLocal(){mergeRows(pendingRows);if(SOURCE!=='live')SOURCE='local';jumpTo(pendingRows);closeM('up');rebuild()}
-function jumpTo(rows){const ms=rows.map(r=>r.period.slice(0,7)).sort();st.to=ms[ms.length-1];const all=[...new Set(RAW.map(r=>r.period.slice(0,7)))].sort();st.from=all[Math.max(0,all.indexOf(st.to)-11)]}
-async function saveToSheet(){
-  const pass=ls.get('atm_pass')||prompt('Upload passcode');if(!pass)return;
-  const btns=document.getElementById('upbtns');btns.querySelectorAll('button').forEach(b=>b.disabled=true);msg('upmsg','Saving '+pendingRows.length+' rows to the Google Sheet…','warn');
-  try{const res=await fetch(api(),{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({passcode:pass,rows:pendingRows})});const j=await res.json();
-    if(!j.ok)throw new Error(j.error||'save failed');ls.set('atm_pass',pass);
-    msg('upmsg',`Saved: ${j.added} new row(s), ${j.replaced} replaced. Reloading…`,'okm');const up=pendingRows;await loadLive();jumpTo(up);rebuild();setTimeout(()=>closeM('up'),900);
-  }catch(err){if(/passcode/i.test(err.message))ls.del('atm_pass');msg('upmsg','Could not save: '+esc(err.message)+'. Nothing was changed in the sheet.','err');btns.querySelectorAll('button').forEach(b=>b.disabled=false)}
+async function saveUpload(){
+  const btns=$("#upbtns");btns.querySelectorAll("button").forEach(b=>b.disabled=true);msg("#upmsg","Saving "+S.pending.length+" rows to the Google Sheet…","warn");
+  try{const j=await post({tab:"Data",rows:S.pending.map(dataObj)});let rj=null;if(S.pendingRep.length)rj=await post({tab:"Repairs",rows:S.pendingRep.map(repObj)});
+    const up=S.pending;await loadLive();jumpTo(up);S.imp=null;
+    render();msg("#upmsg",`✔ Saved to the master Google Sheet: ${j.added} new row(s), ${j.replaced} replaced${rj?", "+(rj.added+rj.replaced)+" repair-log entries":""}. The dashboard now shows the new data.`,"ok");
+  }catch(err){msg("#upmsg","Could not save: "+esc(err.message)+". Nothing was changed in the sheet.","err");btns.querySelectorAll("button").forEach(b=>b.disabled=false)}
 }
-async function loadLive(){
-  const res=await fetch(api()+(api().includes('?')?'&':'?')+'t='+Date.now());const j=await res.json();if(!j.ok)throw new Error(j.error||'load failed');
-  const h=j.head.map(x=>String(x).trim().toLowerCase()),ix=k=>h.findIndex(x=>ALIAS[k].includes(x));const I=['atm','period','cans','revenue','op','elec','rep','other'].map(ix);
-  RAW=j.rows.map(r=>mkRow(I.map(i=>i>=0?r[i]:0))).filter(r=>r.atm&&r.period);SOURCE='live';
+function jumpTo(rows){const ms=rows.map(r=>r.period.slice(0,7)).sort();const all=allMonths();const to=ms[ms.length-1];if(to&&to!==all[all.length-1]){S.period="custom";S.to=to;S.from=all[Math.max(0,all.indexOf(to)-5)]}}
+function save(name,blob){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+function downloadCSV(){const ms=periodMonths();const q=v=>/[",\n]/.test(String(v))?'"'+String(v).replace(/"/g,'""')+'"':v;
+  const rs=S.monthly.filter(r=>ms.includes(r.month)&&(!S.atm||r.atm===S.atm)).sort((a,b)=>a.month.localeCompare(b.month)||a.atm.localeCompare(b.atm));
+  const h=["ATM","Month","Cans","Revenue","Operator pay","Electricity","Repairs and consumables","Other costs","New cards","Cards registered"];
+  save(`ATM data ${ms[0]} to ${ms[ms.length-1]}.csv`,new Blob([[h.join(",")].concat(rs.map(r=>[r.atm,r.month,r.cans,r.revenue,r.operatorPay,r.electricity,r.repairs,r.otherCosts,r.newCards,r.totalCards==null?"":r.totalCards].map(q).join(","))).join("\n")],{type:"text/csv"}))}
+function downloadTemplate(){
+  const all=allMonths();const next=all.length?addMonths(all[all.length-1],1):"";
+  const h=["ATM","Period","Cans","Revenue","Operator pay","Electricity","Repairs and consumables","Other costs","New cards","Cards registered"];
+  const aoa=[h].concat(Object.keys(S.atms).sort().map(a=>[a,next,"","","","","","","",""]));
+  if(window.XLSX){const ws=XLSX.utils.aoa_to_sheet(aoa);ws["!cols"]=[{wch:24},{wch:12}].concat(Array(8).fill({wch:14}));
+    const help=XLSX.utils.aoa_to_sheet([["How to fill this template"],["One row per ATM per period."],["Period: month as 2026-10, or the week’s start date as 2026-10-05 for weekly data."],["Amounts in rupees, numbers only. Cans = cans sold in the period."],["Other costs = water charges, housekeeping and anything not in the other columns."],["A row with the same ATM and Period as an existing row replaces it."]]);
+    const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Data");XLSX.utils.book_append_sheet(wb,help,"Help");XLSX.writeFile(wb,"ATM upload template "+next+".xlsx")}
+  else save("ATM upload template "+next+".csv",new Blob([aoa.map(r=>r.join(",")).join("\n")],{type:"text/csv"}));
 }
-function openSettings(){document.getElementById('apiUrl').value=api();document.getElementById('pass').value=ls.get('atm_pass')||'';msg('setmsg','');document.getElementById('set').classList.add('on')}
-async function saveApi(){const u=document.getElementById('apiUrl').value.trim(),p=document.getElementById('pass').value;
-  if(u&&!/^https:\/\/script\.google(usercontent)?\.com\//.test(u)){msg('setmsg','That does not look like an Apps Script web-app address.','err');return}
-  ls.set('atm_api',u);p?ls.set('atm_pass',p):ls.del('atm_pass');if(!u){useSeed();closeM('set');return}
-  msg('setmsg','Connecting…','warn');try{await loadLive();rebuild();msg('setmsg','Connected: '+RAW.length+' rows loaded.','okm');setTimeout(()=>closeM('set'),900)}catch(e){msg('setmsg','Could not load data: '+esc(e.message),'err')}}
-function clearApi(){ls.del('atm_api');ls.del('atm_pass');document.getElementById('apiUrl').value='';useSeed();closeM('set')}
-function useSeed(){RAW=SEED.map(mkRow);SOURCE='sample';rebuild()}
 
-/* ---------- start ---------- */
-(async()=>{useSeed();if(api()){try{await loadLive();rebuild()}catch(e){const b=document.getElementById('src');b.textContent='Sheet unreachable · showing sample';}}})();
+/* ---------- load ---------- */
+const seedRow=r=>({atm:r[0],period:r[1],cans:r[2],revenue:r[3],operatorPay:r[4],electricity:r[5],repairs:r[6],otherCosts:r[7],newCards:r[8],totalCards:r[9],source:"Monthly sheet"});
+const seedRep=r=>({atm:r[0],date:r[1],item:r[2],cost:r[3],daysDown:null,source:"Monthly sheet"});
+function useSeed(){S.atms={};(SEED.atms||[]).forEach(([n,s])=>S.atms[n]={name:n,status:s});S.raw=SEED.monthly.map(seedRow);S.repairs=SEED.repairs.map(seedRep);S.checks=[];S.src="seed";rebuild()}
+async function loadLive(){
+  const res=await fetch(api()+(api().includes("?")?"&":"?")+"t="+Date.now());const j=await res.json();if(!j.ok)throw new Error(j.error||"load failed");
+  const T=j.tabs||{Data:{head:j.head,rows:j.rows}};
+  const objs=t=>{const x=T[t];if(!x||!x.head)return [];const h=x.head.map(v=>String(v).trim());return (x.rows||[]).map(r=>{const o={};h.forEach((n,i)=>o[n]=r[i]);return o})};
+  const blank=v=>v==null||v==="";
+  S.atms={};objs("ATMs").forEach(o=>{if(!blank(o.ATM))S.atms[String(o.ATM).trim()]={name:String(o.ATM).trim(),status:o.Status||"New site"}});
+  S.raw=objs("Data").filter(o=>!blank(o.ATM)&&normPeriod(o.Period)).map(o=>({atm:String(o.ATM).trim(),period:normPeriod(o.Period),cans:num(o.Cans),revenue:num(o.Revenue),operatorPay:num(o["Operator pay"]),electricity:num(o.Electricity),repairs:num(o["Repairs and consumables"]),otherCosts:num(o["Other costs"]),newCards:blank(o["New cards"])?0:num(o["New cards"]),totalCards:blank(o["Cards registered"])?null:num(o["Cards registered"]),source:o.Source||""}));
+  S.repairs=objs("Repairs").filter(o=>!blank(o.ATM)).map(o=>({atm:String(o.ATM).trim(),date:String(o.Date||"").slice(0,10),item:o["What was repaired"]||"",cost:num(o.Cost),daysDown:blank(o["Days shut"])?null:num(o["Days shut"]),fixedBy:o["Fixed by"]||"",notes:o.Notes||"",source:o.Source||"Logged"}));
+  S.checks=objs("Checks").filter(o=>!blank(o.ATM)).map(o=>{const c={atm:String(o.ATM).trim(),month:String(o.Month||"").slice(0,7),tds:o.TDS,ph:o.pH,downtimeDays:num(o["Days shut"]),meter:o["Meter reading"],filledBy:o["Filled by"]||"",notes:o.Notes||""};CHK_ITEMS.forEach(([n,h])=>c[n]=String(o[h]||"yes").toLowerCase());return c});
+  S.src="live";S.updated=j.updated||new Date().toISOString();rebuild();
+}
+
+/* ---------- events ---------- */
+document.querySelectorAll("#period button").forEach(b=>b.onclick=()=>{S.period=b.dataset.p;render()});
+$("#fromM").onchange=e=>{S.from=e.target.value;render()};$("#toM").onchange=e=>{S.to=e.target.value;render()};
+$("#atmSel").onchange=e=>{S.atm=e.target.value;render()};
+const go=t=>{S.tab=t;ls.set("atmTab",t);document.activeElement&&document.activeElement.blur();render();window.scrollTo({top:0})};
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>go(b.dataset.t));
+document.addEventListener("click",e=>{
+  const g=e.target.closest("[data-go]");if(g){go(g.dataset.go);return}
+  const a=e.target.closest("[data-act]");if(!a)return;const v=a.dataset.v;
+  if(a.dataset.act==="atm"){S.atm=S.atm===v?"":v;render()}
+  else if(a.dataset.act==="cxline"){S.cx.line=v;if(S.tab!=="costs")go("costs");else render()}
+  else if(a.dataset.act==="cxmeas"){S.cx.meas=v;render()}
+  else if(a.dataset.act==="cxbucket"){S.cx.bucket=S.cx.bucket===v?"":v;if(S.tab!=="costs")go("costs");else render()}
+  else if(a.dataset.act==="cell"){S.atm=v;S.cx.bucket=a.dataset.b;render()}
+});
+$("#masterLink").href=MASTER_URL;$("#masterLink2").href=MASTER_URL;
+window.ATM_STATE=S;   // for checking in the browser console
+useSeed();render();
+if(api())loadLive().then(render).catch(()=>{const b=$("#srcBadge");b.className="proto";b.textContent="Google Sheet unreachable · showing bundled Apr–Sep 2026 data"});
+})();
 </script>
 </body>
 </html>
