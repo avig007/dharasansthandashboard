@@ -126,6 +126,12 @@ details summary{cursor:pointer;font-weight:700;color:var(--accent)}
 .howto h3{margin-top:4px}
 .howto ol,.howto ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
 .hide{display:none}
+.gate{max-width:520px;margin:30px auto;display:flex;flex-direction:column;gap:14px}
+.gate .box{gap:12px}
+.gate label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;font-weight:600;color:var(--muted)}
+.gate input,.gate textarea{font-size:15px}
+.gate .code{font:600 24px var(--mono);letter-spacing:.3em;text-align:center}
+body.locked .bar,body.locked #masterLink,body.locked [data-go="add"],body.locked #srcBadge,body.locked .wrap>p.foot{display:none!important}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -141,6 +147,7 @@ details summary{cursor:pointer;font-weight:700;color:var(--accent)}
       <span class="proto" id="srcBadge">Prototype · seeded with April–September 2026 data</span>
       <a class="btn ghost" id="masterLink" target="_blank" rel="noopener">Master data ↗</a>
       <button class="btn" type="button" data-go="add">⬆ Add data</button>
+      <span class="foot" id="userChip" hidden></span>
     </div>
   </header>
 
@@ -196,7 +203,7 @@ const TAB_HEAD = {
 const CHK_ITEMS=[["tanksCleaned","Tanks cleaned","Tanks cleaned (every 15 days)","Tanks not cleaned"],["filtersChanged","Filters changed","RO filters changed (every 30 days)","Filters not changed"],["pumpOk","Pump OK","Pump and motor working normally","Pump or motor fault"],["wiringOk","Wiring OK","Wiring safe, no burnt or loose wires","Wiring problem"],["earthingOk","Earthing OK","Earthing and circuit breaker OK","Earthing not OK"],["readerOk","Card reader OK","Card reader and taps working","Card reader fault"],["noLeaks","No leaks","No leaks","Leaks found"]];
 
 /* ---------- state ---------- */
-const S={atms:{},raw:[],monthly:[],repairs:[],checks:[],tab:"overview",period:"6",from:"",to:"",atm:"",sort:{money:["sur",-1]},src:"seed",updated:"",
+const S={auth:{},gate:null,private:false,atms:{},raw:[],monthly:[],repairs:[],checks:[],tab:"overview",period:"6",from:"",to:"",atm:"",sort:{money:["sur",-1]},src:"seed",updated:"",
   cx:{line:"all",meas:"pc",bucket:""},dq:"",imp:null,pending:null,pendingRep:null};
 const $=s=>document.querySelector(s);
 const ls={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}},del:k=>{try{localStorage.removeItem(k)}catch(e){}}};
@@ -540,9 +547,9 @@ function vMaster(ms){
    <div class="box"><h2>Connection (one-time set-up)</h2>
     <p class="note">Paste the web-app address from the sheet's Apps Script (see SETUP.md) and the upload passcode. Both are kept in this browser only.</p>
     <form class="f" id="setForm"><label class="wide">Apps Script URL<input id="apiUrl" type="text" placeholder="https://script.google.com/macros/s/…/exec" value="${esc(api())}"></label>
-     <label class="wide">Upload passcode<input id="pass" type="password" value="${esc(ls.get("atm_pass")||"")}"></label>
+     ${S.private?`<p class="wide note">Private mode: people sign in with their email; you approve them in the sheet's <b>Access</b> tab.</p>`:`<label class="wide">Upload passcode<input id="pass" type="password" value="${esc(ls.get("atm_pass")||"")}"></label>`}
      <div class="wide row"><p class="status" id="setStatus" role="status"></p><span><button type="button" class="btn ghost" id="disBtn">Disconnect</button> <button class="btn" type="submit">Save and load</button></span></div></form>
-    ${live?`<button type="button" class="btn ghost" id="seedBtn">Copy the bundled Apr–Sep 2026 history (cards, repair notes) into the Sheet</button>`:""}</div></div>
+    ${live&&SEED&&(!S.private||S.auth.role==="Editor")?`<button type="button" class="btn ghost" id="seedBtn">Copy the bundled Apr–Sep 2026 history (cards, repair notes) into the Sheet</button>`:""}</div></div>
   <div class="box"><div class="row"><h2>Rows in the period · ${rs.length}</h2><input id="dq" type="search" placeholder="Search ATM" value="${esc(S.dq)}"></div>
    <div class="scroll" style="max-height:520px;overflow-y:auto"><table><thead><tr><th>ATM</th><th>Month</th><th>Cans</th><th>Revenue</th><th>Operator</th><th>Power</th><th>Repairs</th><th>Other</th><th>Surplus</th><th>New cards</th><th>Cards</th></tr></thead><tbody>
    ${rs.slice(0,600).map(r=>{const s=num(r.revenue)-costOf(r);return `<tr><td>${atmLink(r.atm)}</td><td>${esc(r.month)}</td><td>${Math.round(r.cans).toLocaleString("en-IN")}</td><td>${inr(r.revenue)}</td><td>${inr(r.operatorPay)}</td><td>${inr(r.electricity)}</td><td>${inr(r.repairs)}</td><td>${inr(r.otherCosts)}</td><td class="${s<0?"neg":"pos"}">${inr(s)}</td><td>${num(r.newCards)}</td><td>${r.totalCards==null?"–":num(r.totalCards).toLocaleString("en-IN")}</td></tr>`}).join("")}
@@ -583,6 +590,10 @@ function vHelp(){
     <li>Check the preview and the cost check.</li>
     <li>Click <b>Save to Google Sheet</b>. The dashboard reloads with the new month.</li></ol>
     <p class="note">Repairs and checklists are saved from their own tabs. A mistake is fixed by saving the same ATM and month again.</p></div>
+   <div class="box howto"><h3>7. Access and sign-in</h3><ul>
+    <li>The dashboard is private. New users enter their email once and request access; the owner approves them in the master sheet.</li>
+    <li>After approval, enter your email, then the 6-digit code sent to it. The browser stays signed in.</li>
+    <li><b>Viewer</b> access shows everything; <b>Editor</b> access can also upload and save. Use <i>Sign out</i> (top right) on shared computers.</li></ul></div>
    <div class="box howto"><h3>6. A monthly review in 10 minutes</h3><ol>
     <li>Upload the new month.</li><li>Flags: list the ATMs that need a visit.</li>
     <li>Cost explorer: check “Biggest increases” for each cost line.</li>
@@ -591,10 +602,44 @@ function vHelp(){
 }
 
 /* ---------- render ---------- */
+
+/* ---------- sign-in gate (private mode) ---------- */
+function vGate(){
+  const g=S.gate,box=x=>`<div class="gate"><div class="box"><div class="eyebrow">Private dashboard</div><h2 style="font:700 22px var(--display);letter-spacing:0;text-transform:none;color:var(--ink)">ATM Monitor sign-in</h2>${x}</div><p class="foot" style="text-align:center">Access is given by Dhara Sansthan's ATM Monitor team. You sign in once on each device.</p></div>`;
+  if(g.step==="loading")return box('<p class="note">Loading…</p>');
+  if(g.step==="setup")return box('<p>This dashboard is not connected to its Google Sheet yet. The owner needs to set the web-app address (see SETUP.md).</p>');
+  if(g.step==="error")return box(`<div class="msg err">Could not reach the data: ${esc(g.msg)}</div><button type="button" class="btn" onclick="location.reload()">Try again</button>`);
+  if(g.step==="email")return box(`<p>Enter your email address. If you already have access, we will email you a 6-digit code. If not, you can ask for access.</p>
+    <form id="gForm" class="gate"><label>Email<input id="gEmail" type="email" required autocomplete="email" value="${esc(g.email||"")}"></label><button class="btn" type="submit">Continue</button><p class="status" id="gStatus" role="status"></p></form>`);
+  if(g.step==="details")return box(`<p><b>${esc(g.email)}</b> does not have access yet. Tell us who you are and the owner will review your request.</p>
+    <form id="gForm" class="gate" style="margin:0"><label>Full name<input id="gName" required maxlength="80"></label><label>Organisation<input id="gOrg" maxlength="120" placeholder="e.g. Dhara Sansthan, SPJIMR"></label><label>Why do you need access?<textarea id="gWhy" maxlength="500" placeholder="e.g. monthly review of ATM performance"></textarea></label>
+    <button class="btn" type="submit">Request access</button><button class="btn ghost" type="button" data-gate="email">Use a different email</button><p class="status" id="gStatus" role="status"></p></form>`);
+  if(g.step==="pending")return box(`<div class="msg warn">Your request for <b>${esc(g.email)}</b> is waiting for approval.</div><p>You will get an email when it is approved. Then open this page again and enter your email to sign in.</p><button class="btn ghost" type="button" data-gate="email">Back</button>`);
+  if(g.step==="code")return box(`<p>We emailed a 6-digit code to <b>${esc(g.email)}</b>. It works for 15 minutes. ${g.note?esc(g.note):"Check your spam folder if it does not arrive."}</p>
+    <form id="gForm" class="gate" style="margin:0"><label>Sign-in code<input id="gCode" class="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required autocomplete="one-time-code"></label><button class="btn" type="submit">Sign in</button><button class="btn ghost" type="button" data-gate="email">Send a new code</button><p class="status" id="gStatus" role="status"></p></form>`);
+  return "";
+}
+function wireGate(){
+  const f=$("#gForm");document.querySelectorAll("[data-gate]").forEach(b=>b.onclick=()=>{S.gate={step:b.dataset.gate,email:S.gate.email};render()});
+  if(!f)return;const g=S.gate;const busy=on=>f.querySelectorAll("button").forEach(b=>b.disabled=on);
+  f.onsubmit=async e=>{e.preventDefault();busy(true);setStatus("#gStatus","Please wait…",true);
+    try{let j;
+      if(g.step==="email"){const email=$("#gEmail").value.trim().toLowerCase();j=await call({action:"start",email});if(!j.ok)throw new Error(j.error);S.gate={step:j.step,email,note:j.note}}
+      else if(g.step==="details"){j=await call({action:"request",email:g.email,name:$("#gName").value,org:$("#gOrg").value,reason:$("#gWhy").value});if(!j.ok)throw new Error(j.error);S.gate={step:j.step,email:g.email}}
+      else if(g.step==="code"){j=await call({action:"verify",email:g.email,code:$("#gCode").value.trim()});if(!j.ok)throw new Error(j.error);
+        S.auth={email:g.email,token:j.token,role:j.role,name:j.name};ls.set("atm_auth",JSON.stringify(S.auth));S.gate={step:"loading"};render();await loadLive();S.gate=null}
+      render();
+    }catch(err){busy(false);setStatus("#gStatus",err.message||"Something went wrong. Try again.",false)}};
+  const first=f.querySelector("input");first&&first.focus();
+}
+function signOut(){S.auth={};ls.del("atm_auth");if(!SEED||S.private){S.atms={};S.raw=[];S.repairs=[];S.checks=[];rebuild();S.gate={step:"email"}}render()}
 function render(){
   const main=$("#main");
   const views={overview:vOverview,money:vMoney,costs:vCosts,cards:vCards,repairs:vRepairs,health:vHealth,flags:vFlags,add:vAdd,master:vMaster,help:vHelp};
   if(!views[S.tab])S.tab="overview";
+  document.body.classList.toggle("locked",!!S.gate);
+  const uc=$("#userChip");uc.hidden=!S.auth.token;if(S.auth.token)uc.innerHTML=`Signed in as <b>${esc(S.auth.email)}</b> (${esc(S.auth.role)}) · <button type="button" id="soBtn" style="border:0;background:none;color:var(--accent);font:inherit;cursor:pointer;text-decoration:underline">Sign out</button>`;
+  if(S.gate){main.innerHTML=vGate();wireGate();return}
   const ms=periodMonths();syncControls(ms);
   if(!S.monthly.length&&!["add","master","help"].includes(S.tab)){main.innerHTML='<div class="empty">No monthly figures yet. Open "Add data" to upload the first month.</div>';return}
   const keep=document.activeElement&&document.activeElement.closest&&document.activeElement.closest("form");
@@ -621,9 +666,11 @@ function setStatus(id,msg,ok){const el=$(id);if(el){el.textContent=msg;el.classN
 
 /* ---------- saving: Google Sheet when connected, else this view only ---------- */
 function toSheetRow(tab,o){return o}
-async function post(body){const pass=ls.get("atm_pass")||prompt("Upload passcode (set in the Apps Script)");if(!pass)throw new Error("No passcode");
-  const res=await fetch(api(),{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({...body,passcode:pass})});
-  const j=await res.json();if(!j.ok){if(/passcode/i.test(j.error||""))ls.del("atm_pass");throw new Error(j.error||"save failed")}ls.set("atm_pass",pass);return j}
+async function call(body){const res=await fetch(api(),{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body)});return res.json()}
+async function post(body){
+  if(S.auth.token){const j=await call({...body,email:S.auth.email,token:S.auth.token});if(!j.ok){if(j.auth==="required")signOut();throw new Error(j.error||"save failed")}return j}
+  const pass=ls.get("atm_pass")||prompt("Upload passcode (set in the Apps Script)");if(!pass)throw new Error("No passcode");
+  const j=await call({...body,passcode:pass});if(!j.ok){if(/passcode/i.test(j.error||""))ls.del("atm_pass");throw new Error(j.error||"save failed")}ls.set("atm_pass",pass);return j}
 async function persist(tab,rows,applyLocal,statusId,okMsg,form){
   try{
     if(api()){setStatus(statusId,"Saving to the Google Sheet…",true);await post({tab,rows});await loadLive();setStatus(statusId,okMsg+" Saved to the Google Sheet.",true)}
@@ -660,11 +707,11 @@ function wire(){
   const tb=$("#tplBtn");if(tb)tb.onclick=downloadTemplate;
   const cb=$("#csvBtn");if(cb)cb.onclick=downloadCSV;
   const dq=$("#dq");if(dq)dq.oninput=()=>{S.dq=dq.value;const p=dq.selectionStart;render();const n=$("#dq");n.focus();n.setSelectionRange(p,p)};
-  const sf=$("#setForm");if(sf)sf.onsubmit=async e=>{e.preventDefault();const u=$("#apiUrl").value.trim(),p=$("#pass").value;
+  const sf=$("#setForm");if(sf)sf.onsubmit=async e=>{e.preventDefault();const u=$("#apiUrl").value.trim(),p=$("#pass")?$("#pass").value:"";
     if(u&&!/^https:\/\/script\.google(usercontent)?\.com\//.test(u)){setStatus("#setStatus","That does not look like an Apps Script web-app address.",false);return}
     u?ls.set("atm_api",u):ls.del("atm_api");p?ls.set("atm_pass",p):ls.del("atm_pass");
     if(!u){useSeed();render();return}
-    setStatus("#setStatus","Connecting…",true);try{await loadLive();render();setStatus("#setStatus","Connected: "+S.monthly.length+" ATM-months loaded.",true)}catch(err){setStatus("#setStatus","Could not load data: "+err.message,false)}};
+    setStatus("#setStatus","Connecting…",true);try{await loadLive();render();setStatus("#setStatus","Connected: "+S.monthly.length+" ATM-months loaded.",true)}catch(err){if(err.auth){render();return}setStatus("#setStatus","Could not load data: "+err.message,false)}};
   const db=$("#disBtn");if(db)db.onclick=()=>{ls.del("atm_api");ls.del("atm_pass");useSeed();render()};
   const sb=$("#seedBtn");if(sb)sb.onclick=async()=>{sb.disabled=true;try{
       await post({tab:"ATMs",rows:SEED.atms.map(([a,s])=>({"ATM":a,"Status":s}))});
@@ -784,7 +831,7 @@ function renderImport(){
   const is=$("#impSheet");if(is)is.onchange=()=>{IMP.active=+is.value;renderImport()};
   const ab=$("#aiBtn");if(ab)ab.onclick=aiMap;
   const ok=out.length&&!need.length;
-  $("#upbtns").innerHTML=ok?`<span class="note">Step 5 ·</span><button type="button" class="btn ghost" id="locBtn">Show in dashboard only</button>${api()?'<button type="button" class="btn" id="saveBtn">Save to Google Sheet</button>':'<span class="note">Connect the Google Sheet in Master data to save permanently.</span>'}`:"";
+  $("#upbtns").innerHTML=ok?`<span class="note">Step 5 ·</span><button type="button" class="btn ghost" id="locBtn">Show in dashboard only</button>${api()&&!(S.private&&S.auth.role!=="Editor")?'<button type="button" class="btn" id="saveBtn">Save to Google Sheet</button>':api()?'<span class="note">Your access is view-only, so you cannot save. Ask the owner for Editor access.</span>':'<span class="note">Connect the Google Sheet in Master data to save permanently.</span>'}`:"";
   const lb=$("#locBtn");if(lb)lb.onclick=()=>{mergeRaw(S.pending);mergeRep(S.pendingRep);S.src=S.src==="live"?"live":"local";jumpTo(S.pending);S.imp=null;S.tab="overview";render()};
   const sb=$("#saveBtn");if(sb)sb.onclick=saveUpload;
 }
@@ -823,9 +870,13 @@ function downloadTemplate(){
 /* ---------- load ---------- */
 const seedRow=r=>({atm:r[0],period:r[1],cans:r[2],revenue:r[3],operatorPay:r[4],electricity:r[5],repairs:r[6],otherCosts:r[7],newCards:r[8],totalCards:r[9],source:"Monthly sheet"});
 const seedRep=r=>({atm:r[0],date:r[1],item:r[2],cost:r[3],daysDown:null,source:"Monthly sheet"});
-function useSeed(){S.atms={};(SEED.atms||[]).forEach(([n,s])=>S.atms[n]={name:n,status:s});S.raw=SEED.monthly.map(seedRow);S.repairs=SEED.repairs.map(seedRep);S.checks=[];S.src="seed";rebuild()}
+function useSeed(){if(!SEED){S.atms={};S.raw=[];S.repairs=[];S.checks=[];rebuild();return}S.atms={};(SEED.atms||[]).forEach(([n,s])=>S.atms[n]={name:n,status:s});S.raw=SEED.monthly.map(seedRow);S.repairs=SEED.repairs.map(seedRep);S.checks=[];S.src="seed";rebuild()}
 async function loadLive(){
-  const res=await fetch(api()+(api().includes("?")?"&":"?")+"t="+Date.now());const j=await res.json();if(!j.ok)throw new Error(j.error||"load failed");
+  const qs=(S.auth.token?"email="+encodeURIComponent(S.auth.email)+"&token="+encodeURIComponent(S.auth.token)+"&":"")+"t="+Date.now();
+  const res=await fetch(api()+(api().includes("?")?"&":"?")+qs);const j=await res.json();
+  if(!j.ok&&j.auth==="required"){S.auth={};ls.del("atm_auth");S.gate={step:"email"};const e=new Error("Sign-in needed");e.auth=true;throw e}
+  if(!j.ok)throw new Error(j.error||"load failed");
+  S.private=!!j.private;if(j.role&&S.auth.token)S.auth.role=j.role;
   const T=j.tabs||{Data:{head:j.head,rows:j.rows}};
   const objs=t=>{const x=T[t];if(!x||!x.head)return [];const h=x.head.map(v=>String(v).trim());return (x.rows||[]).map(r=>{const o={};h.forEach((n,i)=>o[n]=r[i]);return o})};
   const blank=v=>v==null||v==="";
@@ -843,6 +894,7 @@ $("#atmSel").onchange=e=>{S.atm=e.target.value;render()};
 const go=t=>{S.tab=t;ls.set("atmTab",t);document.activeElement&&document.activeElement.blur();render();window.scrollTo({top:0})};
 document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>go(b.dataset.t));
 document.addEventListener("click",e=>{
+  if(e.target.id==="soBtn"){signOut();return}
   const g=e.target.closest("[data-go]");if(g){go(g.dataset.go);return}
   const a=e.target.closest("[data-act]");if(!a)return;const v=a.dataset.v;
   if(a.dataset.act==="atm"){S.atm=S.atm===v?"":v;render()}
@@ -853,8 +905,14 @@ document.addEventListener("click",e=>{
 });
 $("#masterLink").href=MASTER_URL;$("#masterLink2").href=MASTER_URL;
 window.ATM_STATE=S;   // for checking in the browser console
-useSeed();render();
-if(api())loadLive().then(render).catch(()=>{const b=$("#srcBadge");b.className="proto";b.textContent="Google Sheet unreachable · showing bundled Apr–Sep 2026 data"});
+try{S.auth=JSON.parse(ls.get("atm_auth")||"{}")||{}}catch(e){S.auth={}}
+if(SEED)useSeed();
+if(!api()&&!SEED){S.gate={step:"setup"}}
+else if(api()&&!SEED){S.gate={step:"loading"}}
+render();
+if(api())loadLive().then(()=>{S.gate=null;render()}).catch(e=>{if(e.auth){render();return}
+  if(!SEED){S.gate={step:"error",msg:e.message};render();return}
+  const b=$("#srcBadge");b.className="proto";b.textContent="Google Sheet unreachable · showing bundled Apr–Sep 2026 data"});
 })();
 </script>
 </body>
